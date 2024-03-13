@@ -1,1 +1,3 @@
 .gopath/
+node_modules/
+tmp/

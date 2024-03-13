@@ -1,0 +1,16 @@
+{
+  "name": "ddn",
+  "version": "1.0.0",
+  "description": "## Useful commands - Setup development environment: `nix develop` - Runs the project: `go run .`",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tailwindcss build -o static/css/tailwind.css",
+    "watch": "tailwindcss build -o static/css/tailwind.css --watch"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}
