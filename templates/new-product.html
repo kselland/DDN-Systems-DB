@@ -1,0 +1,31 @@
+{{define "head"}}
+    <title>Create product | DDN</title>
+{{end}}
+
+{{define "body"}}
+    <h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
+
+    <form class="max-w-prose mx-auto flex flex-col gap-4" method="POST">
+        <label class="flex flex-col">
+            Name
+            <input required name="name" class="p-2 bg-gray-200 rounded-md">
+        </label>
+
+        <label class="flex flex-col">
+            Width (in)
+            <input type="number" required name="width_inches" class="p-2 bg-gray-200 rounded-md">
+        </label>
+
+        <label class="flex flex-col">
+            Length (in)
+            <input type="number" required name="length_inches" class="p-2 bg-gray-200 rounded-md">
+        </label>
+
+        <label class="flex flex-col">
+            Height (in)
+            <input type="number" required name="height_inches" class="p-2 bg-gray-200 rounded-md">
+        </label>
+
+        <button class="px-8 py-4 rounded-md bg-blue-400 w-min">Create</button>
+    </form>
+{{end}}

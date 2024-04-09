@@ -2,7 +2,7 @@
   description = "A minimal Go project flake";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05"; # Adjust the channel as necessary
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11"; # Adjust the channel as necessary
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -16,6 +16,8 @@
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             go
+            gopls
+            air
             # Add any other dependencies here
           ];
 

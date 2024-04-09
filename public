@@ -1,0 +1,15 @@
+ALTER USER zachiahsawyer WITH PASSWORD 'zachiahsawyer';
+\l
+createdb -h localhost -p 5432 -U zachiahsawyer repetition-site
+.exit
+exit
+\q
+\c ddn_systems 
+SELECT * FROM USERS
+;
+\du
+GRANT;
+\help GRANT
+\public
+\schema
+\s public
