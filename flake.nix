@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11"; # Adjust the channel as necessary
     flake-utils.url = "github:numtide/flake-utils";
+    templ.url = "github:a-h/templ";
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
@@ -12,10 +13,12 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        templ = system: inputs.templ.packages.${system}.templ;
       in {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             go
+            (templ system)
             gopls
             air
             # Add any other dependencies here

@@ -2,3 +2,5 @@
 node_modules/
 tmp/
 .env
+*_templ.go
+db-dev.sh

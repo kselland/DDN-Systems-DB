@@ -1,0 +1,96 @@
+package storageLocation
+
+import "ddn/ddn/components"
+import "ddn/ddn/color"
+import "fmt"
+import "strconv"
+
+templ newTemplate(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+	@components.RootLayout("Create storage location | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">New StorageLocation</h1>
+		@EditableStorageLocationComponent(fsl, v, colors)
+	}
+}
+
+templ viewTemplate(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+	@components.RootLayout(fmt.Sprintf("Storage Location: %s | DDN", fsl.Bin)) {
+		<div class="p-4 bg-blue-400"><a href="/storage-locations">&#8592;</a> Editing storage location</div>
+		@EditableStorageLocationComponent(fsl, v, colors)
+	}
+}
+
+func getStorageLocationUrl(p StorageLocation) templ.SafeURL {
+	return templ.URL("/storage-location/" + strconv.Itoa(p.Id))
+}
+
+func deleteStorageLocationUrl(p StorageLocation) templ.SafeURL {
+	return templ.URL("/storage-location/" + strconv.Itoa(p.Id) + "/delete")
+}
+
+templ indexTemplate(storageLocations []StorageLocation) {
+	@components.RootLayout("Storage Locations | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">Storage Locations</h1>
+		<main class="max-w-prose mx-auto">
+			for _, storageLocation := range storageLocations {
+				<article
+					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
+				>
+					<h2 class="flex">
+						{ storageLocation.Bin }
+					</h2>
+					<p>{ strconv.Itoa(storageLocation.Length) }x{ strconv.Itoa(storageLocation.Width ) }x{ strconv.Itoa(storageLocation.Height) }</p>
+					<a
+						class="absolute top-0 left-0 w-full h-full"
+						href={ getStorageLocationUrl(storageLocation) }
+						aria-label={ "View and edit " + storageLocation.Bin }
+					></a>
+					<form action={ deleteStorageLocationUrl(storageLocation) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+						<button class="p-4">&#128465;</button>
+					</form>
+				</article>
+			}
+			<a href="/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+		</main>
+	}
+}
+
+templ EditableStorageLocationComponent(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		if v.Root != "" {
+			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
+		}
+		<div class="relative">
+			<div class="flex">
+				@components.SizeField("bin", fsl.Bin, "Bin", "text")
+			</div>
+			<div class="flex items-end">
+				<div class="flex">
+					@components.SizeField("width", fsl.Width, "W", "number")
+					<span class="font-mono italic text-gray-600 p-1">&times;</span>
+					@components.SizeField("length", fsl.Length, "L", "number")
+					<span class="font-mono italic text-gray-600 p-1">&times;</span>
+					@components.SizeField("height", fsl.Height, "H", "number")
+				</div>
+				<div class="absolute top-4 right-4 flex gap-4">
+					<div class="update-data-actions flex flex-row-reverse">
+						<button class="submit-button text-4xl">&check;</button>
+						if fsl.Id == nil {
+							<a href="/storage-locations" class="cancel-button text-4xl">&times;</a>
+						} else {
+							<button type="reset" class="cancel-button text-4xl">&times;</button>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<script>
+        document.querySelector(".update-data-actions").classList.add("hidden");
+
+        function showSubmitButton() {
+            document.querySelector(".update-data-actions").classList.remove("hidden");
+            document.removeEventListener("input", showSubmitButton);
+        }
+        document.addEventListener("input", showSubmitButton);
+	</script>
+}

@@ -1,0 +1,107 @@
+package inventoryItem
+
+import "ddn/ddn/components"
+import "fmt"
+import "strconv"
+
+templ newTemplate(item FormInventoryItem, v InventoryItemValidation) {
+	@components.RootLayout("Create inventory | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
+		@EditableInventoryItemComponent(item, v)
+	}
+}
+
+templ viewTemplate(item FormInventoryItem, v InventoryItemValidation) {
+	@components.RootLayout(fmt.Sprintf("Inventory at %s | DDN", item.Storage_Location_Id)) {
+		<div class="p-4 bg-blue-400"><a href="/inventory">&#8592;</a> Editing inventory</div>
+		@EditableInventoryItemComponent(item, v)
+	}
+}
+
+func getInventoryItemUrl(item InventoryItem) templ.SafeURL {
+	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id))
+}
+
+func deleteInventoryItemUrl(item InventoryItem) templ.SafeURL {
+	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
+}
+
+templ indexTemplate(items []InventoryItem) {
+	@components.RootLayout("Products | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">Products</h1>
+		<main class="max-w-prose mx-auto">
+			for _, item := range items {
+				<article
+					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
+				>
+					<h2 class="flex">
+						<!-- TODO: Show a human readable storage location -->
+						Inventory at { strconv.Itoa(item.Storage_Location_Id) }
+					</h2>
+					<!-- TODO: Show more information about the inventory item and polish it potentially -->
+					<a
+						class="absolute top-0 left-0 w-full h-full"
+						href={ getInventoryItemUrl(item) }
+						aria-label={ "View and edit inventory at " + strconv.Itoa(item.Storage_Location_Id) }
+					></a>
+					<form action={ deleteInventoryItemUrl(item) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+						<button class="p-4">&#128465;</button>
+					</form>
+				</article>
+			}
+			<a href="/inventory/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+		</main>
+	}
+}
+
+templ EditableInventoryItemComponent(item FormInventoryItem, v InventoryItemValidation) {
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		if v.Root != "" {
+			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
+		}
+		<div class="relative">
+			<div class="flex flex-col">
+				<label class="flex gap-2">
+					<p class="py-1">In stock:</p>
+					@components.SizeField("quantity", item.Quantity, "Qty", "number")
+				</label>
+
+				<label class="flex gap-2">
+					<p class="py-1">Batch Number:</p>
+					@components.SizeField("batch_number", item.Batch_Number, "___", "number")
+				</label>
+
+                <!-- TODO: Make this a product selection fuzzy search (just a select field for non-javascript peoples) -->
+				<label class="flex gap-2">
+					<p class="py-1">Product Id</p>
+					@components.SizeField("product_id", item.Product_Id, "___", "number")
+				</label>
+
+                <!-- TODO: Make this a storage location fuzzy search (just a select field for non-javascript peoples) -->
+				<label class="flex gap-2">
+					<p class="py-1">Storage Location Id</p>
+					@components.SizeField("storage_location_id", item.Storage_Location_Id, "___", "number")
+				</label>
+			</div>
+			<div class="absolute top-4 right-4 flex gap-4">
+				<div class="update-data-actions flex flex-row-reverse">
+					<button class="submit-button text-4xl">&check;</button>
+					if item.Id == nil {
+						<a href="/inventory" class="cancel-button text-4xl">&times;</a>
+					} else {
+						<button type="reset" class="cancel-button text-4xl">&times;</button>
+					}
+				</div>
+			</div>
+		</div>
+	</form>
+	<script>
+        document.querySelector(".update-data-actions").classList.add("hidden");
+
+        function showSubmitButton() {
+            document.querySelector(".update-data-actions").classList.remove("hidden");
+            document.removeEventListener("input", showSubmitButton);
+        }
+        document.addEventListener("input", showSubmitButton);
+	</script>
+}

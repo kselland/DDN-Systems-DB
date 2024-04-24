@@ -1,0 +1,145 @@
+package product
+
+import "ddn/ddn/components"
+import "ddn/ddn/color"
+import "fmt"
+import "strconv"
+
+templ newTemplate(fp FormProduct, v ProductValidation, colors []color.Color) {
+	@components.RootLayout("Create product | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
+		@EditableProductComponent(fp, v, colors)
+	}
+}
+
+templ viewTemplate(fp FormProduct, v ProductValidation, colors []color.Color) {
+	@components.RootLayout(fmt.Sprintf("%s | DDN", fp.Name)) {
+		<div class="p-4 bg-blue-400"><a href="/products">&#8592;</a> Editing product</div>
+		@EditableProductComponent(fp, v, colors)
+	}
+}
+
+func getProductUrl(p Product) templ.SafeURL {
+	return templ.URL("/product/" + strconv.Itoa(p.Id))
+}
+
+func deleteProductUrl(p Product) templ.SafeURL {
+	return templ.URL("/product/" + strconv.Itoa(p.Id) + "/delete")
+}
+
+templ indexTemplate(products []Product) {
+	@components.RootLayout("Products | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">Products</h1>
+		<main class="max-w-prose mx-auto">
+			for _, product := range products {
+				<article
+					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
+				>
+					<h2 class="flex">
+						{ product.Name }
+						<span class="text-gray-600 ml-auto">{ string(product.Product_Type) }</span>
+						<!-- TODO: Background-color isn't correct -->
+						<span class="p-3 rounded-lg ml-4 border border-gray-200" { templ.Attributes{"style": "background-color: " + strconv.Itoa(product.Color_Id) }... }></span>
+					</h2>
+					<p>{ strconv.Itoa(product.Length) }x{ strconv.Itoa(product.Width ) }x{ strconv.Itoa(product.Height) }</p>
+					<a
+						class="absolute top-0 left-0 w-full h-full"
+						href={ getProductUrl(product) }
+						aria-label={ "View and edit " + product.Name }
+					></a>
+					<form action={ deleteProductUrl(product) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+						<button class="p-4">&#128465;</button>
+					</form>
+				</article>
+			}
+			<a href="/products/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+		</main>
+	}
+}
+
+templ EditableProductComponent(fp FormProduct, v ProductValidation, colors []color.Color) {
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		if v.Root != "" {
+			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
+		}
+		<div class="relative">
+			<div class="flex">
+				@components.SizeField("name", fp.Name, "Name", "text")
+				(
+				@components.SizeField("external_id", fp.External_Id, "ext-id", "number")
+				)
+			</div>
+			<div class="flex focus-within:ring w-min rounded-full">
+				<!-- TODO: Check these based on fp.Product_Type -->
+				<label class="relative has-[:checked]:bg-blue-400 px-4 py-2 rounded-full rounded-r-none shadow-md border-r border-gray-400 bg-white">
+					Cabinets
+					<input
+						checked?={ fp.Product_Type == "cabinet" }
+						class="absolute top-0 left-0 w-full h-full opacity-0"
+						type="radio"
+						name="product_type"
+						value="cabinet"
+					/>
+				</label>
+				<label class="relative has-[:checked]:bg-blue-400 px-4 py-2 rounded-full rounded-l-none shadow-md bg-white">
+					Accessory
+					<input
+						checked?={ fp.Product_Type == "accessory" }
+						class="absolute top-0 left-0 w-full h-full opacity-0"
+						type="radio"
+						name="product_type"
+						value="accessory"
+					/>
+				</label>
+			</div>
+			<div class="flex items-end">
+				<div class="flex">
+					@components.SizeField("width", fp.Width, "W", "number")
+					<span class="font-mono italic text-gray-600 p-1">&times;</span>
+					@components.SizeField("length", fp.Length, "L", "number")
+					<span class="font-mono italic text-gray-600 p-1">&times;</span>
+					@components.SizeField("height", fp.Height, "H", "number")
+				</div>
+				<div class="ml-auto flex gap-2">
+					<!-- TODO: Filter colors based on product_type. Maybe only in javascript, because without javascript they wouldn't be able to change the product type and select the color? -->
+					for _, color := range colors {
+						<input
+							class="
+                                    w-8 h-8 relative rounded-full focus:outline-none
+                                    after:absolute after:top-0 after:left-0 after:border-2 after:shadow-md after:border-white after:w-full after:h-full after:rounded-full focus:after:ring-2 checked:after:ring-2 after:bg-[var(--color)]
+                                "
+							{ templ.Attributes{"style": "--color: " + color.Hex_Code }... }
+							type="radio"
+							name="color_id"
+							value={ strconv.Itoa(color.Id) }
+							checked?={ fp.Color_Id == strconv.Itoa(color.Id) }
+						/>
+					}
+				</div>
+			</div>
+			<div class="absolute top-4 right-4 flex gap-4">
+				<div class="flex p-2">
+					<span class="py-1 text-gray-600">$</span>
+					@components.SizeField("price", fp.Price, "___", "text")
+				</div>
+				<div class="update-data-actions flex flex-row-reverse">
+					<button class="submit-button text-4xl">&check;</button>
+					if fp.Id == nil {
+						<a href="/products" class="cancel-button text-4xl">&times;</a>
+					} else {
+						<button type="reset" class="cancel-button text-4xl">&times;</button>
+					}
+				</div>
+			</div>
+		</div>
+	</form>
+	<script>
+        document.querySelector(".update-data-actions").classList.add("hidden");
+
+        function showSubmitButton() {
+            document.querySelector(".update-data-actions").classList.remove("hidden");
+            document.removeEventListener("input", showSubmitButton);
+        }
+        document.addEventListener("input", showSubmitButton);
+	</script>
+}
