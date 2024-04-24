@@ -21,6 +21,14 @@ type InventoryItem struct {
 	Storage_Location_Id int
 }
 
+type DisplayableInventoryItem struct {
+	Id                  int
+	Product_Id          int
+	Quantity            int
+	Batch_Number        int
+	Storage_Location_Bin string
+}
+
 type FormInventoryItem struct {
 	Id                  *int
 	Product_Id          string
@@ -127,12 +135,25 @@ type EditableInventoryItemProps struct {
 }
 
 func IndexPage(w http.ResponseWriter, r *http.Request) error {
-	query, err := db.Db.Query("SELECT * FROM inventory_items")
+	query, err := db.Db.Query(`
+		SELECT 
+			i.id,
+			i.product_id,
+			i.quantity,
+			i.batch_number,
+			s.bin storage_location_bin
+		FROM
+			inventory_items i
+		LEFT JOIN
+			storage_locations s
+		ON
+			i.storage_location_id = s.id
+	`)
 	if err != nil {
 		return err
 	}
 
-	inventoryItems := db.GetTable[InventoryItem](query)
+	inventoryItems := db.GetTable[DisplayableInventoryItem](query)
 
 	return indexTemplate(
 		inventoryItems,

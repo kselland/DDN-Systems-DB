@@ -29,7 +29,10 @@ func deleteStorageLocationUrl(p StorageLocation) templ.SafeURL {
 
 templ indexTemplate(storageLocations []StorageLocation) {
 	@components.RootLayout("Storage Locations | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">Storage Locations</h1>
+		<h1 class="p-4 bg-blue-400 mb-4">
+			<a href="/">&#8592;</a>
+			Storage Locations
+		</h1>
 		<main class="max-w-prose mx-auto">
 			for _, storageLocation := range storageLocations {
 				<article

@@ -19,17 +19,12 @@ templ viewTemplate(fp FormProduct, v ProductValidation, colors []color.Color) {
 	}
 }
 
-func getProductUrl(p Product) templ.SafeURL {
-	return templ.URL("/product/" + strconv.Itoa(p.Id))
-}
-
-func deleteProductUrl(p Product) templ.SafeURL {
-	return templ.URL("/product/" + strconv.Itoa(p.Id) + "/delete")
-}
-
-templ indexTemplate(products []Product) {
+templ indexTemplate(products []DisplayableProduct) {
 	@components.RootLayout("Products | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">Products</h1>
+		<h1 class="p-4 bg-blue-400 mb-4">
+			<a href="/">&#8592;</a>
+			Products
+		</h1>
 		<main class="max-w-prose mx-auto">
 			for _, product := range products {
 				<article
@@ -39,15 +34,15 @@ templ indexTemplate(products []Product) {
 						{ product.Name }
 						<span class="text-gray-600 ml-auto">{ string(product.Product_Type) }</span>
 						<!-- TODO: Background-color isn't correct -->
-						<span class="p-3 rounded-lg ml-4 border border-gray-200" { templ.Attributes{"style": "background-color: " + strconv.Itoa(product.Color_Id) }... }></span>
+						<span class="p-3 rounded-lg ml-4 border border-gray-200" { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
 					</h2>
 					<p>{ strconv.Itoa(product.Length) }x{ strconv.Itoa(product.Width ) }x{ strconv.Itoa(product.Height) }</p>
 					<a
 						class="absolute top-0 left-0 w-full h-full"
-						href={ getProductUrl(product) }
+						href={ templ.URL("/product/" + strconv.Itoa(product.Id)) }
 						aria-label={ "View and edit " + product.Name }
 					></a>
-					<form action={ deleteProductUrl(product) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+					<form action={ templ.URL("/product/" + strconv.Itoa(product.Id) + "/delete") } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
 						<button class="p-4">&#128465;</button>
 					</form>
 				</article>
@@ -70,7 +65,6 @@ templ EditableProductComponent(fp FormProduct, v ProductValidation, colors []col
 				)
 			</div>
 			<div class="flex focus-within:ring w-min rounded-full">
-				<!-- TODO: Check these based on fp.Product_Type -->
 				<label class="relative has-[:checked]:bg-blue-400 px-4 py-2 rounded-full rounded-r-none shadow-md border-r border-gray-400 bg-white">
 					Cabinets
 					<input

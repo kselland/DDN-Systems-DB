@@ -29,6 +29,19 @@ type Product struct {
 	External_Id  int
 }
 
+type DisplayableProduct struct {
+	Id             int
+	Name           string
+	Product_Type   product_type.ProductType
+	Length         int
+	Width          int
+	Height         int
+	Active         bool
+	Price_Cents    int
+	Color_Hex_Code string
+	External_Id    int
+}
+
 type FormProduct struct {
 	Id           *int
 	Name         string
@@ -220,12 +233,30 @@ type EditableProductProps struct {
 }
 
 func IndexPage(w http.ResponseWriter, r *http.Request) error {
-	query, err := db.Db.Query("SELECT * FROM products")
+	query, err := db.Db.Query(`
+		SELECT
+			p.id,
+			p.name,
+			p.product_type,
+			p.length,
+			p.width,
+			p.height,
+			p.active,
+			p.price_cents,
+			c.hex_code color_hex_code,
+			p.external_id
+		FROM
+			products p
+		LEFT JOIN
+		    colors c
+		ON
+			p.color_id = c.id
+	`)
 	if err != nil {
 		return err
 	}
 
-	products := db.GetTable[Product](query)
+	products := db.GetTable[DisplayableProduct](query)
 
 	return indexTemplate(
 		products,
@@ -238,7 +269,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(idString)
 	if err != nil {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
@@ -250,7 +281,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	products := db.GetTable[Product](productsQuery)
 	if len(products) == 0 {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
@@ -336,7 +367,7 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 
 	if len(products) == 0 {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}

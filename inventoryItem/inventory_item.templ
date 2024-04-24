@@ -26,25 +26,27 @@ func deleteInventoryItemUrl(item InventoryItem) templ.SafeURL {
 	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
 }
 
-templ indexTemplate(items []InventoryItem) {
-	@components.RootLayout("Products | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">Products</h1>
+templ indexTemplate(items []DisplayableInventoryItem) {
+	@components.RootLayout("Inventory | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">
+			<a href="/">&#8592;</a>
+			Inventory
+		</h1>
 		<main class="max-w-prose mx-auto">
 			for _, item := range items {
 				<article
 					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
 				>
 					<h2 class="flex">
-						<!-- TODO: Show a human readable storage location -->
-						Inventory at { strconv.Itoa(item.Storage_Location_Id) }
+						Inventory at { item.Storage_Location_Bin }
 					</h2>
 					<!-- TODO: Show more information about the inventory item and polish it potentially -->
 					<a
 						class="absolute top-0 left-0 w-full h-full"
-						href={ getInventoryItemUrl(item) }
-						aria-label={ "View and edit inventory at " + strconv.Itoa(item.Storage_Location_Id) }
+						href={ templ.URL(fmt.Sprintf("/inventory-item/%d)", item.Id)) }
+						aria-label={ "View and edit inventory at " + item.Storage_Location_Bin }
 					></a>
-					<form action={ deleteInventoryItemUrl(item) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+					<form action={ templ.URL(fmt.Sprintf("/inventory-item/%d/delete", item.Id)) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
 						<button class="p-4">&#128465;</button>
 					</form>
 				</article>

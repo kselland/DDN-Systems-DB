@@ -33,7 +33,6 @@ func getDb() *sql.DB {
 	return DB
 }
 
-// TODO: Implement db connection pooling
 var Db *sql.DB
 
 func GetTable[T any](rows *sql.Rows) (out []T) {
