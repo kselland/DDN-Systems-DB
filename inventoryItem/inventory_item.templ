@@ -4,17 +4,17 @@ import "ddn/ddn/components"
 import "fmt"
 import "strconv"
 
-templ newTemplate(item FormInventoryItem, v InventoryItemValidation) {
-	@components.RootLayout("Create inventory | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
-		@EditableInventoryItemComponent(item, v)
+templ newTemplate(item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
+	@components.RootLayout("Add inventory | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4"><a href="/inventory">&#8592;</a> Add inventory</h1>
+		@EditableInventoryItemComponent(item, v, productOptions, storageLocationOptions)
 	}
 }
 
-templ viewTemplate(item FormInventoryItem, v InventoryItemValidation) {
+templ viewTemplate(item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
 	@components.RootLayout(fmt.Sprintf("Inventory at %s | DDN", item.Storage_Location_Id)) {
 		<div class="p-4 bg-blue-400"><a href="/inventory">&#8592;</a> Editing inventory</div>
-		@EditableInventoryItemComponent(item, v)
+		@EditableInventoryItemComponent(item, v, productOptions, storageLocationOptions)
 	}
 }
 
@@ -26,37 +26,180 @@ func deleteInventoryItemUrl(item InventoryItem) templ.SafeURL {
 	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
 }
 
-templ indexTemplate(items []DisplayableInventoryItem) {
+func getProductUrl(id int) templ.SafeURL {
+	return templ.URL("/product/" + strconv.Itoa(id))
+}
+
+func getStorageLocationId(id int) templ.SafeURL {
+	return templ.URL("/storage-location/" + strconv.Itoa(id))
+}
+
+func getUrl(search string, perPage int, page int) templ.SafeURL {
+	return templ.URL(fmt.Sprintf("?search=%s&perPage=%d&page=%d", search, perPage, page))
+}
+
+func getPaginationClass(disabled bool) string {
+	if disabled {
+		return "px-2 py-1 outline-none bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-slate-400 focus:bg-gray-200 dark:focus:bg-slate-600 duration-200 border border-gray-200 dark:border-slate-600 rounded-sm basis-0 flex gap-1"
+	} else {
+		return "px-2 py-1 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 duration-200 border border-gray-200 dark:border-slate-600 rounded-sm basis-0 flex gap-1"
+	}
+
+}
+
+type IndexTemplateProps = struct {
+	filteredItems []DisplayableInventoryItem
+	search        string
+	pagination    []PaginationItem
+	perPage       int
+	page          int
+}
+
+type PaginationType int64
+
+const (
+	Back     PaginationType = 0
+	Next     PaginationType = 1
+	Number   PaginationType = 2
+	Ellipsis PaginationType = 3
+)
+
+type PaginationItem = struct {
+	paginationType PaginationType
+	to             int
+}
+
+func tdClass(padding bool) string {
+	if padding {
+		return "p-3 border-b dark:border-slate-600"
+	} else {
+		return "p-0 border-b dark:border-slate-600"
+	}
+}
+
+templ Td(padding bool) {
+	<td class={ tdClass(padding) }>
+		{ children... }
+	</td>
+}
+
+templ indexTemplate(props IndexTemplateProps) {
 	@components.RootLayout("Inventory | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">
+		<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800">
 			<a href="/">&#8592;</a>
 			Inventory
 		</h1>
-		<main class="max-w-prose mx-auto">
-			for _, item := range items {
-				<article
-					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
-				>
-					<h2 class="flex">
-						Inventory at { item.Storage_Location_Bin }
-					</h2>
-					<!-- TODO: Show more information about the inventory item and polish it potentially -->
-					<a
-						class="absolute top-0 left-0 w-full h-full"
-						href={ templ.URL(fmt.Sprintf("/inventory-item/%d)", item.Id)) }
-						aria-label={ "View and edit inventory at " + item.Storage_Location_Bin }
-					></a>
-					<form action={ templ.URL(fmt.Sprintf("/inventory-item/%d/delete", item.Id)) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
-						<button class="p-4">&#128465;</button>
-					</form>
-				</article>
-			}
-			<a href="/inventory/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+		<main class="mx-auto p-4">
+			<table class="w-full border-separate border-spacing-0">
+				<thead>
+					<tr class="sticky top-0 bg-white dark:bg-slate-800 z-10">
+						<th colspan="6">
+							<form class="font-normal mx-auto rounded-xl flex relative mb-4 items-stretch pt-4">
+								<input value={ props.search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
+								<button class="p-4 border flex items-center justify-center rounded-r-xl outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600">
+									<span class="h-8 w-8 icon-[heroicons-outline--search]"></span>
+								</button>
+							</form>
+						</th>
+					</tr>
+					<tr class="sticky top-24 bg-white dark:bg-slate-800 z-10">
+						<th class="border-b dark:border-slate-600 p-3 text-left">Bin</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">In stock</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">Batch Number</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">Product</th>
+						<th class="border-b dark:border-slate-600 text-left p-0">
+							<div class="flex w-full">
+								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/inventory/new">
+									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
+								</a>
+							</div>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, item := range props.filteredItems {
+						<tr>
+							@Td(true) {
+								<a class="text-blue-400" href={ getStorageLocationId(item.Storage_Location_Id) }>
+									{ item.Storage_Location_Bin }
+								</a>
+							}
+							@Td(true) {
+								{ strconv.Itoa(item.Quantity) }
+							}
+							@Td(true) {
+								{ strconv.Itoa(item.Batch_Number) }
+							}
+							@Td(true) {
+								<a class="text-blue-400 outline-none focus:underline" href={ getProductUrl(item.Product_Id) }>
+									{ item.Product_Name }
+								</a>
+							}
+							@Td(false) {
+								<div class="flex">
+									<form class="ml-auto" action={ templ.URL(fmt.Sprintf("/inventory-item/%d/delete", item.Id)) } method="POST">
+										<button
+											class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+											aria-label={ "Delete inventory " + item.Storage_Location_Bin }
+										>
+											<span class="w-4 h-4 icon-[heroicons-outline--trash]"></span>
+										</button>
+									</form>
+									<a
+										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+										href={ templ.URL(fmt.Sprintf("/inventory-item/%d", item.Id)) }
+										aria-label={ "View and edit inventory at " + item.Storage_Location_Bin }
+									>
+										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
+									</a>
+								</div>
+							}
+						</tr>
+					}
+				</tbody>
+				<tfoot>
+					<tr>
+						<td class="bg-white dark:bg-slate-800 sticky bottom-0 border-gray-200 dark:border-slate-600 border-t" colspan="6">
+							<div class="flex gap-2 py-2">
+								for _, paginationItem := range props.pagination {
+									<a href={ getUrl(props.search, props.perPage, paginationItem.to) } class={ getPaginationClass(paginationItem.to == props.page) }>
+										if paginationItem.paginationType == Back {
+											<span class="relative top-1 icon-[heroicons-outline--chevron-left]"></span>
+											Back
+										} else if paginationItem.paginationType == Next {
+											Next
+											<span class="relative top-1 icon-[heroicons-outline--chevron-right]"></span>
+										} else if paginationItem.paginationType == Number {
+											{ strconv.Itoa(paginationItem.to) }
+										} else if paginationItem.paginationType == Ellipsis {
+											<span class="relative top-0.5 icon-[heroicons-outline--ellipsis-horizontal]"></span>
+										}
+									</a>
+								}
+								<label class="ml-auto px-2 py-1 border focus-within:bg-gray-200 dark:focus-within:bg-slate-600 duration-200 border-gray-200 dark:border-slate-600 rounded-sm flex gap-2 items-center">
+									Rows per page:
+									<select class="py-1 outline-none bg-transparent">
+										<option value="10">10</option>
+										<option value="20">20</option>
+										<option value="50">50</option>
+										<option value="100">100</option>
+									</select>
+								</label>
+							</div>
+						</td>
+					</tr>
+				</tfoot>
+			</table>
 		</main>
 	}
 }
 
-templ EditableInventoryItemComponent(item FormInventoryItem, v InventoryItemValidation) {
+templ EditableInventoryItemComponent(
+	item FormInventoryItem,
+	v InventoryItemValidation,
+	productOptions []components.Option,
+	storageLocationOptions []components.Option,
+) {
 	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
@@ -67,23 +210,24 @@ templ EditableInventoryItemComponent(item FormInventoryItem, v InventoryItemVali
 					<p class="py-1">In stock:</p>
 					@components.SizeField("quantity", item.Quantity, "Qty", "number")
 				</label>
-
 				<label class="flex gap-2">
 					<p class="py-1">Batch Number:</p>
 					@components.SizeField("batch_number", item.Batch_Number, "___", "number")
 				</label>
-
-                <!-- TODO: Make this a product selection fuzzy search (just a select field for non-javascript peoples) -->
-				<label class="flex gap-2">
-					<p class="py-1">Product Id</p>
-					@components.SizeField("product_id", item.Product_Id, "___", "number")
-				</label>
-
-                <!-- TODO: Make this a storage location fuzzy search (just a select field for non-javascript peoples) -->
-				<label class="flex gap-2">
-					<p class="py-1">Storage Location Id</p>
-					@components.SizeField("storage_location_id", item.Storage_Location_Id, "___", "number")
-				</label>
+				@components.FuzzySelect("product_id", item.Product_Id, productOptions)
+				@components.FuzzySelect("storage_location_id", item.Storage_Location_Id, storageLocationOptions)
+			</div>
+			<div class="flex gap-4 justify-end">
+				<!-- TODO: if they mess up the submission but add a storage location, then it would allow them to click. Don't even know if that's desirable, but just a not if nothing else -->
+				if item.Storage_Location_Id != "" {
+					<!-- TODO: Show the storage location bin not id -->
+					<a class="text-blue-400" href={ templ.URL(fmt.Sprintf("/storage-location/%s", item.Storage_Location_Id)) }>Go to bin { item.Storage_Location_Id }</a>
+				}
+				<!-- TODO: if they mess up the submission but add a product, then it would allow them to click. Don't even know if that's desirable, but just a not if nothing else -->
+				if item.Product_Id != "" {
+					<!-- TODO: Show the product name -->
+					<a class="text-blue-400" href={ templ.URL(fmt.Sprintf("/product/%s", item.Product_Id)) }>Go to product { item.Product_Id }</a>
+				}
 			</div>
 			<div class="absolute top-4 right-4 flex gap-4">
 				<div class="update-data-actions flex flex-row-reverse">
@@ -98,12 +242,13 @@ templ EditableInventoryItemComponent(item FormInventoryItem, v InventoryItemVali
 		</div>
 	</form>
 	<script>
-        document.querySelector(".update-data-actions").classList.add("hidden");
+		const updateDataActions = document.querySelector(".update-data-actions");
+		updateDataActions.classList.add("hidden");
 
-        function showSubmitButton() {
-            document.querySelector(".update-data-actions").classList.remove("hidden");
-            document.removeEventListener("input", showSubmitButton);
-        }
-        document.addEventListener("input", showSubmitButton);
+		function showSubmitButton() {
+			updateDataActions.classList.remove("hidden");
+			document.removeEventListener("input", showSubmitButton);
+		}
+		document.addEventListener("input", showSubmitButton);
 	</script>
 }

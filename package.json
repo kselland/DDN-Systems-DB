@@ -5,12 +5,20 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tailwindcss build -o static/css/tailwind.css",
-    "watch": "tailwindcss build -o static/css/tailwind.css --watch"
+    "build": "tailwindcss build -o static/css/tailwind.css && esbuild static/js/index.ts --outfile=static/js/index.js",
+    "watch:css": "tailwindcss build -o static/css/tailwind.css --watch",
+    "watch:js": "esbuild static/js/index.ts --outfile=static/js/index.js --watch"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@iconify-json/heroicons": "^1.1.21",
+    "@iconify-json/heroicons-outline": "^1.1.10",
+    "@iconify/tailwind": "^1.0.1",
     "tailwindcss": "^3.4.1"
+  },
+  "dependencies": {
+    "esbuild": "^0.20.2",
+    "typescript": "^5.4.5"
   }
 }

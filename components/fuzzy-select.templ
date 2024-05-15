@@ -1,0 +1,18 @@
+package components
+
+type Option struct {
+	Value string
+	Text  string
+}
+
+templ FuzzySelect(name string, value string, options []Option) {
+	<!-- TODO: Allow buttons to be clickable and auto select the option when -->
+	<div class="fuzzy-select relative">
+		<div class="js-mount"></div>
+		<select name={ name }>
+			for _, option := range options {
+				<option value={ option.Value } selected?={ option.Value == value }>{ option.Text }</option>
+			}
+		</select>
+	</div>
+}

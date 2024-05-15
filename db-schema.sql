@@ -7,16 +7,6 @@ CREATE TABLE colors (
     product_type product_type NOT NULL
 );
 
-INSERT INTO colors (hex_code, name, product_type)
-VALUES
-    ('#FFFFFF', 'white', 'cabinet'),
-    ('#EEE1C6', 'n2', 'cabinet'),
-    ('#FFFFFF', 'white', 'accessory'),
-    ('#EEE1C6', 'n2', 'accessory'),
-    ('#A3A19B', 'satin-nickel', 'accessory'),
-    ('#000000', 'black', 'accessory')
-;
-
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name text NOT NULL,

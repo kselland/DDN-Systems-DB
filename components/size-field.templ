@@ -3,7 +3,7 @@ package components
 templ SizeField(name string, value string, placeholder string, inputType string) {
 	<div class="size-field p-1">
 		<div class="relative group">
-			<div class="shadow-text font-mono invisible group-focus-within:px-2 duration-200">
+			<div class="shadow-text font-mono invisible group-focus-within:px-2 duration-200 whitespace-pre">
 				if value == "" {
 					{ placeholder }
 				} else {
@@ -20,6 +20,9 @@ templ SizeField(name string, value string, placeholder string, inputType string)
 			/>
 		</div>
 	</div>
+}
+
+templ sizeFieldScript() {
 	<script>
         document.querySelectorAll(".size-field").forEach(el => {
             el.addEventListener("input", (e) => {

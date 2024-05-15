@@ -7,7 +7,7 @@ import "strconv"
 
 templ newTemplate(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
 	@components.RootLayout("Create storage location | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">New StorageLocation</h1>
+		<h1 class="p-4 bg-blue-400 mb-4"><a href="/storage-locations">&#8592;</a> New Storage location</h1>
 		@EditableStorageLocationComponent(fsl, v, colors)
 	}
 }
@@ -85,6 +85,7 @@ templ EditableStorageLocationComponent(fsl FormStorageLocation, v StorageLocatio
 					</div>
 				</div>
 			</div>
+			<!-- TODO: Add a link to the inventory for this bin. If there isn't inventory for it then it should go to a creation form with the bin preselected -->
 		</div>
 	</form>
 	<script>

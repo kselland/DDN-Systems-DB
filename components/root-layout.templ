@@ -8,10 +8,12 @@ templ RootLayout(title string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="stylesheet" href="/static/css/tailwind.css"/>
 			<link rel="stylesheet" href="/static/css/global.css"/>
+			<script src="/static/js/index.js" defer async></script>
 			<title>{ title }</title>
 		</head>
-		<body>
+		<body class="dark:bg-slate-800 dark:text-white dark:!border-gray-600">
 			{ children... }
+			@sizeFieldScript()
 		</body>
 	</html>
 }
