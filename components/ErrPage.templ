@@ -8,7 +8,10 @@ import (
 
 templ ErrPage(err lib.RequestError) {
 	@RootLayout(fmt.Sprintf("%d %s | DDN", err.StatusCode, err.Message)) {
-		<main class="mx-auto mt-8 max-w-prose p-6 py-20 rounded-md shadow-lg">
+		<main class="mx-auto mt-8 max-w-prose p-6 rounded-md dark:shadow-slate-400 shadow-lg">
+			<nav class="flex">
+				<a href="/app">Home</a>
+			</nav>
 			<h1 class="flex gap-4 justify-center">
 				<span class="text-4xl">{ strconv.Itoa(err.StatusCode) }</span>
 				<span class="w-0.5 bg-gray-400"></span>
