@@ -16,5 +16,5 @@ func GetColorsFromDb() ([]Color, error) {
 		return nil, colorsQueryErr
 	}
 	
-    return db.GetTable[Color](colorsQuery), nil
+    return db.GetTable[Color](colorsQuery)
 }

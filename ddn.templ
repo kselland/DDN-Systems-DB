@@ -1,27 +1,18 @@
 package main
 
 import "ddn/ddn/components"
-import "ddn/ddn/lib"
-import "fmt"
-import "strconv"
+import "ddn/ddn/session"
 
-templ homePageTemplate() {
+templ homePageTemplate(s *session.Session) {
 	@components.RootLayout("Home | DDN") {
 		<article class="flex flex-col max-w-prose mt-8 mx-auto gap-4">
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/products">Products</a>
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/storage-locations">Storage Locations</a>
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/inventory">Inventory</a>
+			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/products">Products</a>
+			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/storage-locations">Storage Locations</a>
+			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/inventory">Inventory</a>
+			<form method="POST" action="/logout" class="contents">
+				@components.CSRF(s.Csrf_Token)
+				<button class="p-4 rounded-md shadow-md dark:shadow-slate-400 text-left">Logout</button>
+			</form>
 		</article>
 	}
-}
-
-templ errPage(err lib.RequestError) {
-	@components.RootLayout(fmt.Sprintf("%d %s | DDN", err.StatusCode, err.Message))
-	<main class="mx-auto mt-8 max-w-prose p-6 py-20 rounded-md shadow-lg">
-		<h1 class="flex gap-4 justify-center">
-			<span class="text-4xl">{ strconv.Itoa(err.StatusCode) }</span>
-			<span class="w-0.5 bg-gray-400"></span>
-			<span class="text-4xl">{ err.Message }</span>
-		</h1>
-	</main>
 }

@@ -6,6 +6,7 @@ import (
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
 	"ddn/ddn/product_type"
+	"ddn/ddn/session"
 	"fmt"
 	"log"
 	"net/http"
@@ -232,7 +233,7 @@ type EditableProductProps struct {
 	Id          *int
 }
 
-func IndexPage(w http.ResponseWriter, r *http.Request) error {
+func IndexPage(s * session.Session, w http.ResponseWriter, r *http.Request) error {
 	query, err := db.Db.Query(`
 		SELECT
 			p.id,
@@ -256,14 +257,18 @@ func IndexPage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	products := db.GetTable[DisplayableProduct](query)
+	products, err := db.GetTable[DisplayableProduct](query)
+	if err != nil {
+		return err
+	}
 
 	return indexTemplate(
+		s,
 		products,
 	).Render(context.Background(), w)
 }
 
-func ViewPage(w http.ResponseWriter, r *http.Request) error {
+func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	idString := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(idString)
@@ -278,7 +283,11 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	if productsErr != nil {
 		return err
 	}
-	products := db.GetTable[Product](productsQuery)
+	products, err := db.GetTable[Product](productsQuery)
+	if err != nil {
+		return err
+	}
+
 	if len(products) == 0 {
 		return &lib.RequestError{
 			Message:    "Not Found",
@@ -300,6 +309,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if product == nil {
 			return viewTemplate(
+				s,
 				formProduct,
 				validation,
 				colors,
@@ -336,6 +346,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 		)
 		if err != nil {
 			return viewTemplate(
+				s,
 				formProduct,
 				ProductValidation{
 					Root: "Failed to update product in DB",
@@ -349,6 +360,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return viewTemplate(
+		s,
 		productToFormProduct(product),
 		ProductValidation{},
 		colors,
@@ -363,7 +375,10 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	products := db.GetTable[Product](query)
+	products, err := db.GetTable[Product](query)
+	if err != nil {
+		return err
+	}
 
 	if len(products) == 0 {
 		return &lib.RequestError{
@@ -381,7 +396,7 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewPage(w http.ResponseWriter, r *http.Request) error {
+func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	colors, err := color.GetColorsFromDb()
 	if err != nil {
 		return err
@@ -394,6 +409,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if product == nil {
 			return newTemplate(
+				s,
 				formProduct,
 				validation,
 				colors,
@@ -427,6 +443,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			log.Println(err)
 			return newTemplate(
+				s,
 				formProduct,
 				ProductValidation{Root: "Error saving product to database"},
 				colors,
@@ -439,6 +456,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return newTemplate(
+		s,
 		FormProduct{},
 		ProductValidation{},
 		colors,

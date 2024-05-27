@@ -3,35 +3,36 @@ package inventoryItem
 import "ddn/ddn/components"
 import "fmt"
 import "strconv"
+import "ddn/ddn/session"
 
-templ newTemplate(item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
+templ newTemplate(s *session.Session, item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
 	@components.RootLayout("Add inventory | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4"><a href="/inventory">&#8592;</a> Add inventory</h1>
-		@EditableInventoryItemComponent(item, v, productOptions, storageLocationOptions)
+		@EditableInventoryItemComponent(s, item, v, productOptions, storageLocationOptions)
 	}
 }
 
-templ viewTemplate(item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
+templ viewTemplate(s *session.Session, item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
 	@components.RootLayout(fmt.Sprintf("Inventory at %s | DDN", item.Storage_Location_Id)) {
 		<div class="p-4 bg-blue-400"><a href="/inventory">&#8592;</a> Editing inventory</div>
-		@EditableInventoryItemComponent(item, v, productOptions, storageLocationOptions)
+		@EditableInventoryItemComponent(s, item, v, productOptions, storageLocationOptions)
 	}
 }
 
 func getInventoryItemUrl(item InventoryItem) templ.SafeURL {
-	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id))
+	return templ.URL("/app/inventory-item/" + strconv.Itoa(item.Id))
 }
 
 func deleteInventoryItemUrl(item InventoryItem) templ.SafeURL {
-	return templ.URL("/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
+	return templ.URL("/app/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
 }
 
 func getProductUrl(id int) templ.SafeURL {
-	return templ.URL("/product/" + strconv.Itoa(id))
+	return templ.URL("/app/product/" + strconv.Itoa(id))
 }
 
 func getStorageLocationId(id int) templ.SafeURL {
-	return templ.URL("/storage-location/" + strconv.Itoa(id))
+	return templ.URL("/app/storage-location/" + strconv.Itoa(id))
 }
 
 func getUrl(search string, perPage int, page int) templ.SafeURL {
@@ -47,7 +48,7 @@ func getPaginationClass(disabled bool) string {
 
 }
 
-type IndexTemplateProps = struct {
+type IndexTemplateProps struct {
 	filteredItems []DisplayableInventoryItem
 	search        string
 	pagination    []PaginationItem
@@ -64,7 +65,7 @@ const (
 	Ellipsis PaginationType = 3
 )
 
-type PaginationItem = struct {
+type PaginationItem struct {
 	paginationType PaginationType
 	to             int
 }
@@ -83,7 +84,7 @@ templ Td(padding bool) {
 	</td>
 }
 
-templ indexTemplate(props IndexTemplateProps) {
+templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 	@components.RootLayout("Inventory | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800">
 			<a href="/">&#8592;</a>
@@ -95,6 +96,7 @@ templ indexTemplate(props IndexTemplateProps) {
 					<tr class="sticky top-0 bg-white dark:bg-slate-800 z-10">
 						<th colspan="6">
 							<form class="font-normal mx-auto rounded-xl flex relative mb-4 items-stretch pt-4">
+								@components.CSRF(s.Csrf_Token)
 								<input value={ props.search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
 								<button class="p-4 border flex items-center justify-center rounded-r-xl outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600">
 									<span class="h-8 w-8 icon-[heroicons-outline--search]"></span>
@@ -138,6 +140,7 @@ templ indexTemplate(props IndexTemplateProps) {
 							@Td(false) {
 								<div class="flex">
 									<form class="ml-auto" action={ templ.URL(fmt.Sprintf("/inventory-item/%d/delete", item.Id)) } method="POST">
+										@components.CSRF(s.Csrf_Token)
 										<button
 											class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
 											aria-label={ "Delete inventory " + item.Storage_Location_Bin }
@@ -147,7 +150,7 @@ templ indexTemplate(props IndexTemplateProps) {
 									</form>
 									<a
 										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
-										href={ templ.URL(fmt.Sprintf("/inventory-item/%d", item.Id)) }
+										href={ templ.URL(fmt.Sprintf("/app/inventory-item/%d", item.Id)) }
 										aria-label={ "View and edit inventory at " + item.Storage_Location_Bin }
 									>
 										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
@@ -195,12 +198,14 @@ templ indexTemplate(props IndexTemplateProps) {
 }
 
 templ EditableInventoryItemComponent(
+	s *session.Session,
 	item FormInventoryItem,
 	v InventoryItemValidation,
 	productOptions []components.Option,
 	storageLocationOptions []components.Option,
 ) {
 	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
 		}
@@ -233,7 +238,7 @@ templ EditableInventoryItemComponent(
 				<div class="update-data-actions flex flex-row-reverse">
 					<button class="submit-button text-4xl">&check;</button>
 					if item.Id == nil {
-						<a href="/inventory" class="cancel-button text-4xl">&times;</a>
+						<a href="/app/inventory" class="cancel-button text-4xl">&times;</a>
 					} else {
 						<button type="reset" class="cancel-button text-4xl">&times;</button>
 					}

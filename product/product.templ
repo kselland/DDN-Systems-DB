@@ -4,22 +4,23 @@ import "ddn/ddn/components"
 import "ddn/ddn/color"
 import "fmt"
 import "strconv"
+import "ddn/ddn/session"
 
-templ newTemplate(fp FormProduct, v ProductValidation, colors []color.Color) {
+templ newTemplate(s *session.Session, fp FormProduct, v ProductValidation, colors []color.Color) {
 	@components.RootLayout("Create product | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
-		@EditableProductComponent(fp, v, colors)
+		@EditableProductComponent(s, fp, v, colors)
 	}
 }
 
-templ viewTemplate(fp FormProduct, v ProductValidation, colors []color.Color) {
+templ viewTemplate(s *session.Session, fp FormProduct, v ProductValidation, colors []color.Color) {
 	@components.RootLayout(fmt.Sprintf("%s | DDN", fp.Name)) {
 		<div class="p-4 bg-blue-400"><a href="/products">&#8592;</a> Editing product</div>
-		@EditableProductComponent(fp, v, colors)
+		@EditableProductComponent(s, fp, v, colors)
 	}
 }
 
-templ indexTemplate(products []DisplayableProduct) {
+templ indexTemplate(s *session.Session, products []DisplayableProduct) {
 	@components.RootLayout("Products | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4">
 			<a href="/">&#8592;</a>
@@ -39,21 +40,23 @@ templ indexTemplate(products []DisplayableProduct) {
 					<p>{ strconv.Itoa(product.Length) }x{ strconv.Itoa(product.Width ) }x{ strconv.Itoa(product.Height) }</p>
 					<a
 						class="absolute top-0 left-0 w-full h-full"
-						href={ templ.URL("/product/" + strconv.Itoa(product.Id)) }
+						href={ templ.URL("/app/product/" + strconv.Itoa(product.Id)) }
 						aria-label={ "View and edit " + product.Name }
 					></a>
-					<form action={ templ.URL("/product/" + strconv.Itoa(product.Id) + "/delete") } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+					<form action={ templ.URL("/app/product/" + strconv.Itoa(product.Id) + "/delete") } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+						@components.CSRF(s.Csrf_Token)
 						<button class="p-4">&#128465;</button>
 					</form>
 				</article>
 			}
-			<a href="/products/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+			<a href="/app/products/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
 		</main>
 	}
 }
 
-templ EditableProductComponent(fp FormProduct, v ProductValidation, colors []color.Color) {
+templ EditableProductComponent(s *session.Session, fp FormProduct, v ProductValidation, colors []color.Color) {
 	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
 		}

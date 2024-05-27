@@ -1,3 +1,4 @@
+-- APPLICATION SPECIFIC TABLES
 CREATE TYPE product_type AS ENUM ('cabinet', 'accessory');
 
 CREATE TABLE colors (
@@ -37,4 +38,18 @@ CREATE TABLE inventory_items (
     batch_number integer NOT NULL,
     storage_location_id integer NOT NULL,
     FOREIGN KEY (storage_location_id) REFERENCES storage_locations (id)
+);
+
+-- AUTH RELATED TABLES
+CREATE TABLE sessions (
+    id SERIAL PRIMARY KEY,
+    csrf_token text NOT NULL,
+    user_id text NOT NULL,
+    session_key_digest bytea NOT NULL
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    password_digest bytea NOT NULL,
+    email text NOT NULL UNIQUE
 );

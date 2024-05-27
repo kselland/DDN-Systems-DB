@@ -35,8 +35,9 @@ func getDb() *sql.DB {
 
 var Db *sql.DB
 
-func GetTable[T any](rows *sql.Rows) (out []T) {
+func GetTable[T any](rows *sql.Rows) (out []T, err error) {
 	var table []T
+
 	for rows.Next() {
 		var data T
 		s := reflect.ValueOf(&data).Elem()
@@ -45,19 +46,53 @@ func GetTable[T any](rows *sql.Rows) (out []T) {
 
 		for i := 0; i < numCols; i++ {
 			field := s.Field(i)
-			columns[i] = field.Addr().Interface()
+			// Special handling for byte slices
+			if field.Kind() == reflect.Slice && field.Type().Elem().Kind() == reflect.Uint8 {
+				var byteData []byte
+				columns[i] = &byteData
+				field.Set(reflect.ValueOf(byteData))
+			} else {
+				columns[i] = field.Addr().Interface()
+			}
 		}
 
 		if err := rows.Scan(columns...); err != nil {
-			fmt.Println("Case Read Error ", err)
+			return nil, fmt.Errorf("case read error: %w", err)
+		}
+
+		for i := 0; i < numCols; i++ {
+			field := s.Field(i)
+			if field.Kind() == reflect.Slice && field.Type().Elem().Kind() == reflect.Uint8 {
+				field.Set(reflect.ValueOf(*columns[i].(*[]byte)))
+			}
 		}
 
 		table = append(table, data)
 	}
-	return table
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error: %w", err)
+	}
+
+	return table, nil
+}
+
+
+func GetFirst[T any](rows *sql.Rows) (out *T, err error) {
+	table, err := GetTable[T](rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(table) == 0 {
+		return nil, nil
+	}
+
+	return &table[0], nil
 }
 
 func init() {
+	// TODO: This should not be here, it should be loaded in a more intentional location
 	err := godotenv.Load(".env")
 
 	if err != nil {

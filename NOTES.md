@@ -16,6 +16,9 @@ These are notes on the DDN project
     - [ ] Remove subscriptions to signals when they can be removed
     - [ ] Potentially make `effect` batch updates
     - [ ] Separate reading and writing in signals to allow for readonly state to be passed around (especially important for derivations)
+- [ ] Sessions
+    - [ ] User
+    - [ ] CSRF tokens for added security
 
 ## Business todos
 - [ ] Search interface for inventory.

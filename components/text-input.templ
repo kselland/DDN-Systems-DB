@@ -1,0 +1,14 @@
+package components
+
+templ TextInput(name string, inputType string, required bool, label string, value string) {
+    <label class="flex flex-col gap-2">
+        { label }
+        <input
+            value={ value }
+            name={ name }
+            type={ inputType }
+            required?={ required }
+            class="duration-200 px-4 p-2 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring dark:border-slate-600 border grow block bg-transparent rounded-md w-full"
+        />
+    </label>
+}

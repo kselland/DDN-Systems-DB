@@ -5,6 +5,7 @@ import (
 	"ddn/ddn/color"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
+	"ddn/ddn/session"
 	"fmt"
 	"log"
 	"net/http"
@@ -51,11 +52,11 @@ func getFormStorageLocationFromPost(r *http.Request, id *int) FormStorageLocatio
 }
 
 type StorageLocationValidation struct {
-	Root         string
-	Bin         string
-	Length       string
-	Width        string
-	Height       string
+	Root   string
+	Bin    string
+	Length string
+	Width  string
+	Height string
 }
 
 func validateFormStorageLocation(p FormStorageLocation, colors []color.Color) (StorageLocationValidation, *StorageLocation) {
@@ -105,39 +106,43 @@ func validateFormStorageLocation(p FormStorageLocation, colors []color.Color) (S
 	}
 
 	return validation, &StorageLocation{
-		Bin:         p.Bin,
-		Length:       length,
-		Width:        width,
-		Height:       height,
+		Bin:    p.Bin,
+		Length: length,
+		Width:  width,
+		Height: height,
 	}
 }
 
 type EditableStorageLocationProps struct {
 	FormStorageLocation FormStorageLocation
-	Validation  StorageLocationValidation
-	Id          *int
+	Validation          StorageLocationValidation
+	Id                  *int
 }
 
-func IndexPage(w http.ResponseWriter, r *http.Request) error {
+func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	query, err := db.Db.Query("SELECT * FROM storage_locations")
 	if err != nil {
 		return err
 	}
 
-	storageLocations := db.GetTable[StorageLocation](query)
+	storageLocations, err := db.GetTable[StorageLocation](query)
+	if err != nil {
+		return err
+	}
 
 	return indexTemplate(
+		s,
 		storageLocations,
 	).Render(context.Background(), w)
 }
 
-func ViewPage(w http.ResponseWriter, r *http.Request) error {
+func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	idString := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(idString)
 	if err != nil {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
@@ -146,10 +151,13 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	if storageLocationsErr != nil {
 		return err
 	}
-	storageLocations := db.GetTable[StorageLocation](storageLocationsQuery)
+	storageLocations, err := db.GetTable[StorageLocation](storageLocationsQuery)
+	if err != nil {
+		return err
+	}
 	if len(storageLocations) == 0 {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
@@ -167,6 +175,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if storageLocation == nil {
 			return viewTemplate(
+				s,
 				formStorageLocation,
 				validation,
 				colors,
@@ -195,6 +204,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 			log.Println(err)
 
 			return viewTemplate(
+				s,
 				formStorageLocation,
 				StorageLocationValidation{
 					Root: "Failed to update storage location in DB",
@@ -208,6 +218,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return viewTemplate(
+		s,
 		storageLocationToFormStorageLocation(storageLocation),
 		StorageLocationValidation{},
 		colors,
@@ -222,11 +233,14 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	storageLocations := db.GetTable[StorageLocation](query)
+	storageLocations, err := db.GetTable[StorageLocation](query)
+	if err != nil {
+		return err
+	}
 
 	if len(storageLocations) == 0 {
 		return &lib.RequestError{
-			Message: "Not Found",
+			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
@@ -240,7 +254,7 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func NewPage(w http.ResponseWriter, r *http.Request) error {
+func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	colors, err := color.GetColorsFromDb()
 	if err != nil {
 		return err
@@ -252,6 +266,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if storageLocation == nil {
 			return newTemplate(
+				s,
 				formStorageLocation,
 				validation,
 				colors,
@@ -275,6 +290,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			log.Println(err)
 			return newTemplate(
+				s,
 				formStorageLocation,
 				StorageLocationValidation{Root: "Error saving storage location to database"},
 				colors,
@@ -287,6 +303,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return newTemplate(
+		s,
 		FormStorageLocation{},
 		StorageLocationValidation{},
 		colors,

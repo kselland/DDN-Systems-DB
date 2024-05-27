@@ -5,6 +5,7 @@ import (
 	"ddn/ddn/components"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
+	"ddn/ddn/session"
 	"fmt"
 	"log"
 	"net/http"
@@ -148,7 +149,7 @@ func getProductOptions() ([]components.Option, error) {
 	if err != nil {
 		return nil, err
 	}
-	return db.GetTable[components.Option](query), nil
+	return db.GetTable[components.Option](query)
 }
 
 func getStorageLocationOptions() ([]components.Option, error) {
@@ -162,7 +163,7 @@ func getStorageLocationOptions() ([]components.Option, error) {
 	if err != nil {
 		return nil, err
 	}
-	return db.GetTable[components.Option](query), nil
+	return db.GetTable[components.Option](query)
 }
 
 func getInventoryItem(id int) (*InventoryItem, error) {
@@ -170,7 +171,10 @@ func getInventoryItem(id int) (*InventoryItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := db.GetTable[InventoryItem](query)
+	result, err := db.GetTable[InventoryItem](query)
+	if err != nil {
+		return nil, err
+	}
 	if len(result) == 0 {
 		return nil, &lib.RequestError{
 			Message:    "Not Found",
@@ -221,11 +225,11 @@ func getPagination(numPages int, perPage int, page int) []PaginationItem {
 	return pagination
 }
 
-type CountStruct = struct {
+type CountStruct struct {
 	Count int
 }
 
-func IndexPage(w http.ResponseWriter, r *http.Request) error {
+func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	search := r.URL.Query().Get("search")
 
 	page, pageErr := strconv.Atoi(r.URL.Query().Get("page"))
@@ -271,7 +275,10 @@ func IndexPage(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	inventoryItems := db.GetTable[DisplayableInventoryItem](query)
+	inventoryItems, err := db.GetTable[DisplayableInventoryItem](query)
+	if err != nil {
+		return err
+	}
 
 	query, err = db.Db.Query(`
 		SELECT COUNT(*) as count FROM inventory_items;
@@ -279,9 +286,13 @@ func IndexPage(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	countStruct := db.GetTable[CountStruct](query)[0]
+	countStruct, err := db.GetFirst[CountStruct](query)
+	if err != nil {
+		return err
+	}
 
 	return indexTemplate(
+		s,
 		IndexTemplateProps{
 			filteredItems: inventoryItems,
 			search:        search,
@@ -301,7 +312,7 @@ func ceilDivide(a int, b int) int {
 	return result
 }
 
-func ViewPage(w http.ResponseWriter, r *http.Request) error {
+func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	idString := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(idString)
@@ -335,6 +346,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if inventoryItem == nil {
 			return viewTemplate(
+				s,
 				formInventoryItem,
 				validation,
 				productOptions,
@@ -362,6 +374,7 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 		)
 		if err != nil {
 			return viewTemplate(
+				s,
 				formInventoryItem,
 				InventoryItemValidation{
 					Root: "Failed to update inventory  in DB",
@@ -371,11 +384,12 @@ func ViewPage(w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/inventory-item/%d", id), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/app/inventory-item/%d", id), http.StatusSeeOther)
 		return nil
 	}
 
 	return viewTemplate(
+		s,
 		inventoryItem.toFormData(),
 		InventoryItemValidation{},
 		productOptions,
@@ -391,7 +405,10 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	inventoryItems := db.GetTable[InventoryItem](query)
+	inventoryItems, err := db.GetTable[InventoryItem](query)
+	if err != nil {
+		return err
+	}
 
 	if len(inventoryItems) == 0 {
 		return &lib.RequestError{
@@ -405,11 +422,11 @@ func DeletePage(w http.ResponseWriter, r *http.Request) error {
 		return err2
 	}
 
-	http.Redirect(w, r, "/inventory", http.StatusSeeOther)
+	http.Redirect(w, r, "/app/inventory", http.StatusSeeOther)
 	return nil
 }
 
-func NewPage(w http.ResponseWriter, r *http.Request) error {
+func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	productOptions, err := getProductOptions()
 	if err != nil {
 		return nil
@@ -427,6 +444,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 
 		if inventoryItem == nil {
 			return newTemplate(
+				s,
 				formInventoryItem,
 				validation,
 				productOptions,
@@ -451,6 +469,7 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			log.Println(err)
 			return newTemplate(
+				s,
 				formInventoryItem,
 				InventoryItemValidation{Root: "Error saving inventory to database"},
 				productOptions,
@@ -458,12 +477,13 @@ func NewPage(w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, "/inventory", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/inventory", http.StatusSeeOther)
 
 		return nil
 	}
 
 	return newTemplate(
+		s,
 		FormInventoryItem{},
 		InventoryItemValidation{},
 		productOptions,

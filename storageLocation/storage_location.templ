@@ -4,18 +4,19 @@ import "ddn/ddn/components"
 import "ddn/ddn/color"
 import "fmt"
 import "strconv"
+import "ddn/ddn/session"
 
-templ newTemplate(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ newTemplate(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
 	@components.RootLayout("Create storage location | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4"><a href="/storage-locations">&#8592;</a> New Storage location</h1>
-		@EditableStorageLocationComponent(fsl, v, colors)
+		<h1 class="p-4 bg-blue-400 mb-4"><a href="/app/storage-locations">&#8592;</a> New Storage location</h1>
+		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
-templ viewTemplate(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ viewTemplate(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
 	@components.RootLayout(fmt.Sprintf("Storage Location: %s | DDN", fsl.Bin)) {
-		<div class="p-4 bg-blue-400"><a href="/storage-locations">&#8592;</a> Editing storage location</div>
-		@EditableStorageLocationComponent(fsl, v, colors)
+		<div class="p-4 bg-blue-400"><a href="/app/storage-locations">&#8592;</a> Editing storage location</div>
+		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
@@ -27,7 +28,7 @@ func deleteStorageLocationUrl(p StorageLocation) templ.SafeURL {
 	return templ.URL("/storage-location/" + strconv.Itoa(p.Id) + "/delete")
 }
 
-templ indexTemplate(storageLocations []StorageLocation) {
+templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
 	@components.RootLayout("Storage Locations | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4">
 			<a href="/">&#8592;</a>
@@ -48,17 +49,19 @@ templ indexTemplate(storageLocations []StorageLocation) {
 						aria-label={ "View and edit " + storageLocation.Bin }
 					></a>
 					<form action={ deleteStorageLocationUrl(storageLocation) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
+						@components.CSRF(s.Csrf_Token)
 						<button class="p-4">&#128465;</button>
 					</form>
 				</article>
 			}
-			<a href="/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+			<a href="/app/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
 		</main>
 	}
 }
 
-templ EditableStorageLocationComponent(fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ EditableStorageLocationComponent(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
 	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
 		}
@@ -78,7 +81,7 @@ templ EditableStorageLocationComponent(fsl FormStorageLocation, v StorageLocatio
 					<div class="update-data-actions flex flex-row-reverse">
 						<button class="submit-button text-4xl">&check;</button>
 						if fsl.Id == nil {
-							<a href="/storage-locations" class="cancel-button text-4xl">&times;</a>
+							<a href="/app/storage-locations" class="cancel-button text-4xl">&times;</a>
 						} else {
 							<button type="reset" class="cancel-button text-4xl">&times;</button>
 						}
