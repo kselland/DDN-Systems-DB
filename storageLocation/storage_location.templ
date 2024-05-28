@@ -87,7 +87,7 @@ templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
 }
 
 templ EditableStorageLocationComponent(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
-	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md dark:shadow-slate-400 shadow-md" method="POST">
 		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
