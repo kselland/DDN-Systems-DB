@@ -34,28 +34,53 @@ templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
 			<a href="/">&#8592;</a>
 			Storage Locations
 		</h1>
-		<main class="max-w-prose mx-auto">
-			for _, storageLocation := range storageLocations {
-				<article
-					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
-				>
-					<h2 class="flex">
-						{ storageLocation.Bin }
-					</h2>
-					<p>{ strconv.Itoa(storageLocation.Length) }x{ strconv.Itoa(storageLocation.Width ) }x{ strconv.Itoa(storageLocation.Height) }</p>
-					<a
-						class="absolute top-0 left-0 w-full h-full"
-						href={ getStorageLocationUrl(storageLocation) }
-						aria-label={ "View and edit " + storageLocation.Bin }
-					></a>
-					<form action={ deleteStorageLocationUrl(storageLocation) } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
-						@components.CSRF(s.Csrf_Token)
-						<button class="p-4">&#128465;</button>
-					</form>
-				</article>
-			}
-			<a href="/app/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
-		</main>
+		@components.Table() {
+			<thead>
+				@components.Tr() {
+					@components.Th() {
+						Bin
+					}
+					@components.Th() {
+						Size <span class="text-gray-400">(</span>L<span class="text-gray-400">x</span>W<span class="text-gray-400">x</span>H<span class="text-gray-400">)</span>
+					}
+					@components.Th() {
+						<a href="/app/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+					}
+				}
+			</thead>
+			<tbody>
+				for _, storageLocation := range storageLocations {
+					@components.Tr() {
+						@components.Td(true) {
+							{ storageLocation.Bin }
+						}
+						@components.Td(true) {
+							{ strconv.Itoa(storageLocation.Length) }x{ strconv.Itoa(storageLocation.Width ) }x{ strconv.Itoa(storageLocation.Height) }
+						}
+						@components.Td(false) {
+							<div class="flex">
+								<form class="ml-auto" action={ templ.URL(fmt.Sprintf("/app/storage-location/%d/delete", storageLocation.Id)) } method="POST">
+									@components.CSRF(s.Csrf_Token)
+									<button
+										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+										aria-label={ "Delete storage location: " + storageLocation.Bin }
+									>
+										<span class="w-4 h-4 icon-[heroicons-outline--trash]"></span>
+									</button>
+								</form>
+								<a
+									class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+									href={ templ.URL(fmt.Sprintf("/app/storage-location/%d", storageLocation.Id)) }
+									aria-label={ "View and edit storage location: " + storageLocation.Bin }
+								>
+									<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
+								</a>
+							</div>
+						}
+					}
+				}
+			</tbody>
+		}
 	}
 }
 

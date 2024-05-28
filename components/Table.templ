@@ -1,0 +1,38 @@
+package components
+
+templ Table() {
+    <table class="w-full border-separate border-spacing-0">
+        { children... }
+    </table>
+}
+
+templ Tr() {
+	<tr class="bg-white dark:bg-slate-800">
+		{ children... }
+	</tr>
+}
+templ StickyTr() {
+	<tr class="sticky top-0 z-10 bg-white dark:bg-slate-800">
+		{ children... }
+	</tr>
+}
+
+templ Th() {
+	<th class="border-b dark:border-slate-600 p-3 text-left">
+		{ children... }
+	</th>
+}
+
+func tdClass(padding bool) string {
+	if padding {
+		return "p-3 border-b dark:border-slate-600"
+	} else {
+		return "p-0 border-b dark:border-slate-600"
+	}
+}
+
+templ Td(padding bool) {
+	<td class={ tdClass(padding) }>
+		{ children... }
+	</td>
+}

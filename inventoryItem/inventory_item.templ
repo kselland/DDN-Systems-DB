@@ -68,20 +68,6 @@ type PaginationItem struct {
 	to             int
 }
 
-func tdClass(padding bool) string {
-	if padding {
-		return "p-3 border-b dark:border-slate-600"
-	} else {
-		return "p-0 border-b dark:border-slate-600"
-	}
-}
-
-templ Td(padding bool) {
-	<td class={ tdClass(padding) }>
-		{ children... }
-	</td>
-}
-
 templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 	@components.RootLayout("Inventory | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800">
@@ -89,9 +75,9 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 			Inventory
 		</h1>
 		<main class="mx-auto p-4">
-			<table class="w-full border-separate border-spacing-0">
+			@components.Table() {
 				<thead>
-					<tr class="bg-white dark:bg-slate-800 z-10">
+					@components.Tr() {
 						<th colspan="6">
 							<form
 								hx-get="/app/inventory"
@@ -108,8 +94,8 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								</button>
 							</form>
 						</th>
-					</tr>
-					<tr class="bg-white dark:bg-slate-800 z-10">
+					}
+					@components.Tr() {
 						<th class="border-b dark:border-slate-600 p-3 text-left">
 							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
 								Label:   "Storage Locations",
@@ -148,8 +134,8 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								</a>
 							</div>
 						</th>
-					</tr>
-					<tr class="sticky top-0 bg-white dark:bg-slate-800 z-10">
+					}
+					@components.StickyTr() {
 						<th class="border-b dark:border-slate-600 p-3 text-left">Bin</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">In stock</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">Batch Number</th>
@@ -161,7 +147,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								</a>
 							</div>
 						</th>
-					</tr>
+					}
 				</thead>
 				<tbody id="tbody">
 					if len(props.filteredItems) == 0 {
@@ -169,25 +155,25 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 					}
 					for _, item := range props.filteredItems {
 						<tr>
-							@Td(true) {
+							@components.Td(true) {
 								<a class="text-blue-400" href={ getStorageLocationId(item.Storage_Location_Id) }>
 									{ item.Storage_Location_Bin }
 								</a>
 							}
-							@Td(true) {
+							@components.Td(true) {
 								{ strconv.Itoa(item.Quantity) }
 							}
-							@Td(true) {
+							@components.Td(true) {
 								{ strconv.Itoa(item.Batch_Number) }
 							}
-							@Td(true) {
+							@components.Td(true) {
 								<a class="text-blue-400 outline-none focus:underline" href={ getProductUrl(item.Product_Id) }>
 									{ item.Product_Name }
 								</a>
 							}
-							@Td(false) {
+							@components.Td(false) {
 								<div class="flex">
-									<form class="ml-auto" action={ templ.URL(fmt.Sprintf("/inventory-item/%d/delete", item.Id)) } method="POST">
+									<form class="ml-auto" action={ templ.URL(fmt.Sprintf("/app/inventory-item/%d/delete", item.Id)) } method="POST">
 										@components.CSRF(s.Csrf_Token)
 										<button
 											class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
@@ -251,7 +237,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 						</td>
 					</tr>
 				</tfoot>
-			</table>
+			}
 		</main>
 		<script>
 			const theForm = document.querySelector("#filter-inventory-form")
