@@ -31,9 +31,7 @@ func handleErrWith500(fn ErroringRoute) Route {
 
 		if err != nil {
 			requestErr, ok := err.(*lib.RequestError);
-			log.Println(requestErr, ok)
 			if !ok {
-				log.Println(err)
 				requestErr = &lib.RequestError{
 					Message: "An Error Occurred",
 					StatusCode: 500,
@@ -48,9 +46,7 @@ func handleErrWith500(fn ErroringRoute) Route {
 
 func handleErr(err error, w http.ResponseWriter) {
 			requestErr, ok := err.(*lib.RequestError);
-			log.Println(requestErr, ok)
 			if !ok {
-				log.Println(err)
 				requestErr = &lib.RequestError{
 					Message: "An Error Occurred",
 					StatusCode: 500,

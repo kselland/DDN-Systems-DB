@@ -305,7 +305,6 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 		formProduct := getFormProductFromPost(r, &id)
 
 		validation, product := validateFormProduct(formProduct, colors)
-		fmt.Println("formProduct", formProduct, validation, product)
 
 		if product == nil {
 			return viewTemplate(
@@ -405,7 +404,6 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "POST" {
 		formProduct := getFormProductFromPost(r, nil)
 		validation, product := validateFormProduct(formProduct, colors)
-		fmt.Println("formProduct", formProduct, validation, product)
 
 		if product == nil {
 			return newTemplate(
@@ -441,7 +439,6 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 			product.Color_Id,
 		)
 		if err != nil {
-			log.Println(err)
 			return newTemplate(
 				s,
 				formProduct,

@@ -81,7 +81,6 @@ func CreateSession(w http.ResponseWriter, userId int) error {
 
     sessionId := res.Id
 
-	log.Println("Made it here as well")
 	http.SetCookie(w, &http.Cookie{
 		Name:  "SESSION_ID",
 		Value: sessionId,

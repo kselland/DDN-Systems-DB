@@ -201,8 +201,6 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 			id,
 		)
 		if err != nil {
-			log.Println(err)
-
 			return viewTemplate(
 				s,
 				formStorageLocation,
@@ -288,7 +286,6 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 			storageLocation.Height,
 		)
 		if err != nil {
-			log.Println(err)
 			return newTemplate(
 				s,
 				formStorageLocation,

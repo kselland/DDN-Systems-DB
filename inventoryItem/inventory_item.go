@@ -186,7 +186,6 @@ func getInventoryItem(id int) (*InventoryItem, error) {
 }
 
 func getPagination(numPages int, perPage int, page int) []PaginationItem {
-	println(numPages, perPage, page)
 	var pagination []PaginationItem
 
 	if page != 1 {
@@ -450,7 +449,6 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 		formInventoryItem := getFormDataFromPost(r, &id)
 
 		validation, inventoryItem := formInventoryItem.validate()
-		fmt.Println("formInventoryItem", formInventoryItem, validation, inventoryItem)
 
 		if inventoryItem == nil {
 			return viewTemplate(
@@ -548,7 +546,6 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "POST" {
 		formInventoryItem := getFormDataFromPost(r, nil)
 		validation, inventoryItem := formInventoryItem.validate()
-		fmt.Println("formInventoryItem", formInventoryItem, validation, inventoryItem)
 
 		if inventoryItem == nil {
 			return newTemplate(
@@ -575,7 +572,6 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 			inventoryItem.Batch_Number,
 		)
 		if err != nil {
-			log.Println(err)
 			return newTemplate(
 				s,
 				formInventoryItem,

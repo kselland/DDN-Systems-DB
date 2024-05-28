@@ -48,8 +48,6 @@ func LoginPage(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 
-		log.Println("Made it here")
-
 		gotoRouteCookie, err := r.Cookie("GOTO_ROUTE")
 
 		var gotoRoute string
@@ -80,7 +78,6 @@ func SignupPage(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			return err
 		}
-		log.Println(password, passwordDigest)
 
 		_, err = db.Db.Exec(`
             INSERT INTO
