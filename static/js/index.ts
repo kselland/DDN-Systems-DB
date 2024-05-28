@@ -97,15 +97,26 @@ const FuzzySelect = (props: {
         }
     }
 
+    const handleClear = () => {
+        if (props.multiple) {
+            props.setSelectedId([])
+        } else {
+            props.setSelectedId("")
+        }
+    }
+
     let parentEl: HTMLElement | null = null;
     createEffect(() => {
         parentEl?.querySelector(`.option-${focusedOption()}`)?.scrollIntoView({block: "center"});
     })
 
+    const isEmpty = () => props.multiple ? props.selectedId.length === 0 : props.selectedId === "";
+    
+
     return html`
         <div class="w-min relative" ref=${(e: HTMLElement) => parentEl = e}>
             <input
-                class=${() => `peer p-4 placeholder-black dark:placeholder-white focus:placeholder-gray-400 dark:focus:placeholder-slate-400 bg-transparent border dark:border-slate-600 rounded-md ${focused() ? 'rounded-b-none' : ''}`}
+                class=${() => `peer p-2 placeholder-black dark:placeholder-white focus:placeholder-gray-400 dark:focus:placeholder-slate-400 bg-transparent border dark:border-slate-600 rounded-md ${focused() ? 'rounded-b-none' : ''}`}
                 value=${inputText}
                 placeholder=${selectedText}
                 onFocus=${(e: FocusEvent & { currentTarget: HTMLInputElement }) => {
@@ -152,6 +163,14 @@ const FuzzySelect = (props: {
                     }}
                 />
             <//>
+            <button
+                type="button"
+                class=${() => `${isEmpty() ? 'opacity-0 pointer-events-none' : ''} absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-800 p-1 duration-200`}
+                tabindex=${() => isEmpty() ? -1 : 0}
+                onClick=${handleClear}
+            >
+                <span class="icon-[heroicons-outline--x-mark]" />
+            <//>
         <//>
     `
 }
@@ -160,6 +179,7 @@ for (const el of document.querySelectorAll(".fuzzy-select")) {
     const select = el.querySelector("select")!;
     select.classList.toggle("hidden");
     const multiple = select.multiple;
+    const onBlur = () => {}
 
     if (multiple) {
         const [selectedId, setSelectedId] = createSignal(Array.from(select.selectedOptions).map(o => o.value));
@@ -182,7 +202,6 @@ for (const el of document.querySelectorAll(".fuzzy-select")) {
                 initial = false
             }
         })
-        const onBlur = () => {}
 
         render(() => html`
             <${FuzzySelect}

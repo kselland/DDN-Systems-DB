@@ -112,6 +112,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 					<tr class="bg-white dark:bg-slate-800 z-10">
 						<th class="border-b dark:border-slate-600 p-3 text-left">
 							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
+								Label:   "Storage Locations",
 								Name:    "storageLocations",
 								Value:   props.filter.storageLocations,
 								Options: props.storageLocationOptions,
@@ -133,6 +134,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 						</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">
 							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
+								Label:   "Product Id",
 								Name:    "productIds",
 								Value:   props.filter.productIds,
 								Options: props.productIdOptions,
