@@ -7,7 +7,6 @@ import (
 	"ddn/ddn/lib"
 	"ddn/ddn/session"
 	"encoding/hex"
-	"log"
 	"net/http"
 )
 
@@ -43,7 +42,7 @@ func LoginPage(w http.ResponseWriter, r *http.Request) error {
 			return loginPageTemplate(LoginPageTemplateDetails{failed: true, email: email}).Render(context.Background(), w)
 		}
 
-		err = session.CreateSession(w, res.Id)
+		err = session.CreateSession(r, w, res.Id)
 		if err != nil {
 			return err
 		}

@@ -8,7 +8,6 @@ import (
 	"ddn/ddn/product_type"
 	"ddn/ddn/session"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"

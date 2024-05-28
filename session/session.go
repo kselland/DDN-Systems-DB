@@ -5,8 +5,8 @@ import (
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
 	"errors"
-	"log"
 	"net/http"
+	"strconv"
 )
 
 type Session struct {
@@ -52,60 +52,83 @@ func AuthenticateSession(r *http.Request) (*Session, error) {
 	return session, nil
 }
 
-func CreateSession(w http.ResponseWriter, userId int) error {
+func CreateSession(r *http.Request, w http.ResponseWriter, userId int) error {
+	if session, err := AuthenticateSession(r); err == nil && session.User_Id == userId {
+		sessionKeyCookie, err := r.Cookie("SESSION_KEY")
+		if err == nil {
+			http.SetCookie(w, &http.Cookie{
+				Name:   "SESSION_ID",
+				Value:  strconv.Itoa(session.Id),
+				Path:   "/",
+				MaxAge: 2000,
+			})
+			http.SetCookie(w, &http.Cookie{
+				Name:   "SESSION_KEY",
+				Value:  sessionKeyCookie.Value,
+				Path:   "/",
+				MaxAge: 2000,
+			})
+			return nil
+		}
+	}
+
 	sessionKey, err := lib.GenerateToken()
 	if err != nil {
 		return err
 	}
-    csrfToken, err := lib.GenerateToken()
-    if err != nil {
-        return err
-    }
-    sessionKeyDigest, err := lib.GetDigest(sessionKey)
-    if err != nil {
-        return err
-    }
-
-    query, err := db.Db.Query("INSERT INTO sessions (session_key_digest, csrf_token, user_id) VALUES ($1, $2, $3) RETURNING id", sessionKeyDigest, csrfToken, userId)
-    if err != nil {
-        return err
-    }
-
-    res, err := db.GetFirst[struct {Id string}](query)
+	csrfToken, err := lib.GenerateToken()
 	if err != nil {
 		return err
 	}
-    if res == nil {
-        return errors.New("SQL isn't working properly")
-    }
+	sessionKeyDigest, err := lib.GetDigest(sessionKey)
+	if err != nil {
+		return err
+	}
 
-    sessionId := res.Id
+	var sessionId int
+
+	query, err := db.Db.Query("INSERT INTO sessions (session_key_digest, csrf_token, user_id) VALUES ($1, $2, $3) RETURNING id", sessionKeyDigest, csrfToken, userId)
+	if err != nil {
+		return err
+	}
+	res, err := db.GetFirst[struct{ Id string }](query)
+	if err != nil {
+		return err
+	}
+	if res == nil {
+		return errors.New("SQL isn't working properly")
+	}
+
+	sessionId, err = strconv.Atoi(res.Id)
+	if err != nil {
+		return err
+	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:  "SESSION_ID",
-		Value: sessionId,
-		Path:  "/",
+		Name:   "SESSION_ID",
+		Value:  strconv.Itoa(sessionId),
+		Path:   "/",
 		MaxAge: 2000,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name:  "SESSION_KEY",
-		Value: sessionKey,
-		Path:  "/",
+		Name:   "SESSION_KEY",
+		Value:  sessionKey,
+		Path:   "/",
 		MaxAge: 2000,
 	})
 
-    return nil
+	return nil
 }
 
 func EndSession(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-        Name: "SESSION_ID",
-        Path: "/",
-        MaxAge: -1,
-    })
-    http.SetCookie(w, &http.Cookie{
-        Name: "SESSION_KEY",
-        Path: "/",
-        MaxAge: -1,
-    })
+		Name:   "SESSION_ID",
+		Path:   "/",
+		MaxAge: -1,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:   "SESSION_KEY",
+		Path:   "/",
+		MaxAge: -1,
+	})
 }

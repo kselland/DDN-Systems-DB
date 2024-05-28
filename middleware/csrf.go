@@ -6,6 +6,7 @@ import (
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
 	"ddn/ddn/session"
+	"log"
 	"net/http"
 
 	"github.com/jaevor/go-nanoid"
@@ -48,6 +49,8 @@ func validateCSRF(r *http.Request) bool {
 	}
 
 	csrf_token := r.FormValue("csrf_token")
+
+	log.Println(csrf_token, session.Csrf_Token)
 	return session.Csrf_Token == csrf_token
 }
 

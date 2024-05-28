@@ -7,7 +7,6 @@ import (
 	"ddn/ddn/lib"
 	"ddn/ddn/session"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"

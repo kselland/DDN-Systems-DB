@@ -13,7 +13,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -30,6 +29,7 @@ func handleErrWith500(fn ErroringRoute) Route {
 		err := fn(w, r)
 
 		if err != nil {
+			fmt.Println(err)
 			requestErr, ok := err.(*lib.RequestError);
 			if !ok {
 				requestErr = &lib.RequestError{

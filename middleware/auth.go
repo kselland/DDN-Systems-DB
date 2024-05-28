@@ -29,7 +29,7 @@ func (mw AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/login", 303)
 			return
 		}
-		session.CreateSession(w, s.User_Id)
+		session.CreateSession(r, w, s.User_Id)
 	}
 
 	mw.handler.ServeHTTP(w, r)
