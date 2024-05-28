@@ -3,7 +3,7 @@ package auth
 import "ddn/ddn/components"
 
 type LoginPageTemplateDetails struct {
-	email string
+	email  string
 	failed bool
 }
 
@@ -14,17 +14,29 @@ templ loginPageTemplate(p LoginPageTemplateDetails) {
 			if p.failed {
 				<p class="text-red-500">Invalid credentials. Please try again</p>
 			}
-			@components.TextInput("email", "email", true, "Email", p.email)
-			@components.TextInput("password", "password", true, "Password", "")
-            @components.Button("submit") {
-                Login
-            }
+			@components.TextInput(components.TextInputProps{
+				Name:      "email",
+				InputType: "email",
+				Required:  true,
+				Label:     "Email",
+				Value:     p.email,
+			})
+			@components.TextInput(components.TextInputProps{
+				Name:      "password",
+				InputType: "password",
+				Required:  true,
+				Label:     "Password",
+				Value:     "",
+			})
+			@components.Button("submit") {
+				Login
+			}
 		</form>
 	}
 }
 
 type SignupPageTemplateDetails struct {
-	email string
+	email      string
 	emailTaken bool
 }
 
@@ -35,11 +47,23 @@ templ signupPageTemplate(p SignupPageTemplateDetails) {
 			if p.emailTaken {
 				<p class="text-red-500">That email is already taken.</p>
 			}
-			@components.TextInput("email", "email", true, "Email", p.email)
-			@components.TextInput("password", "password", true, "Password", "")
-            @components.Button("submit") {
-                Login
-            }
+			@components.TextInput(components.TextInputProps{
+				Name:       "email",
+				InputType: "email",
+				Required:  true,
+				Label:     "Email",
+				Value:     p.email,
+			})
+			@components.TextInput(components.TextInputProps{
+				Name:       "password",
+				InputType: "password",
+				Required:  true,
+				Label:     "Password",
+				Value:     "",
+			})
+			@components.Button("submit") {
+				Login
+			}
 		</form>
 	}
 }

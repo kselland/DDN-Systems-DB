@@ -1,17 +1,35 @@
 package components
 
+import "slices"
+
 type Option struct {
 	Value string
 	Text  string
 }
 
 templ FuzzySelect(name string, value string, options []Option) {
-	<!-- TODO: Allow buttons to be clickable and auto select the option when -->
 	<div class="fuzzy-select relative">
 		<div class="js-mount"></div>
 		<select name={ name }>
 			for _, option := range options {
 				<option value={ option.Value } selected?={ option.Value == value }>{ option.Text }</option>
+			}
+		</select>
+	</div>
+}
+
+type MultiFuzzySelectProps struct {
+    Name string
+	Value []string
+	Options []Option
+	Form string
+}
+templ MultiFuzzySelect(p MultiFuzzySelectProps) {
+	<div class="fuzzy-select relative">
+		<div class="js-mount"></div>
+		<select form={ p.Form } multiple name={ p.Name }>
+			for _, option := range p.Options {
+				<option value={ option.Value } selected?={ slices.Contains(p.Value, option.Value) }>{ option.Text }</option>
 			}
 		</select>
 	</div>

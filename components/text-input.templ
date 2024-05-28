@@ -1,14 +1,24 @@
 package components
 
-templ TextInput(name string, inputType string, required bool, label string, value string) {
-    <label class="flex flex-col gap-2">
-        { label }
-        <input
-            value={ value }
-            name={ name }
-            type={ inputType }
-            required?={ required }
-            class="duration-200 px-4 p-2 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring dark:border-slate-600 border grow block bg-transparent rounded-md w-full"
-        />
-    </label>
+type TextInputProps struct {
+	Name      string
+	InputType string
+	Required  bool
+	Label     string
+	Value     string
+	Form      string
+}
+
+templ TextInput(p TextInputProps) {
+	<label class="flex flex-col gap-2">
+		{ p.Label }
+		<input
+			value={ p.Value }
+			name={ p.Name }
+			type={ p.InputType }
+			required?={ p.Required }
+            form={ p.Form }
+			class="duration-200 px-4 p-2 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring dark:border-slate-600 border grow block bg-transparent rounded-md w-full"
+		/>
+	</label>
 }

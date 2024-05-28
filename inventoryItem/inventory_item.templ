@@ -35,10 +35,6 @@ func getStorageLocationId(id int) templ.SafeURL {
 	return templ.URL("/app/storage-location/" + strconv.Itoa(id))
 }
 
-func getUrl(search string, perPage int, page int) templ.SafeURL {
-	return templ.URL(fmt.Sprintf("?search=%s&perPage=%d&page=%d", search, perPage, page))
-}
-
 func getPaginationClass(disabled bool) string {
 	if disabled {
 		return "px-2 py-1 outline-none bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-slate-400 focus:bg-gray-200 dark:focus:bg-slate-600 duration-200 border border-gray-200 dark:border-slate-600 rounded-sm basis-0 flex gap-1"
@@ -49,11 +45,13 @@ func getPaginationClass(disabled bool) string {
 }
 
 type IndexTemplateProps struct {
-	filteredItems []DisplayableInventoryItem
-	search        string
-	pagination    []PaginationItem
-	perPage       int
-	page          int
+	storageLocationOptions []components.Option
+	productIdOptions       []components.Option
+	filter                 Filter
+	filteredItems          []DisplayableInventoryItem
+	pagination             []PaginationItem
+	perPage                int
+	page                   int
 }
 
 type PaginationType int64
@@ -93,32 +91,80 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 		<main class="mx-auto p-4">
 			<table class="w-full border-separate border-spacing-0">
 				<thead>
-					<tr class="sticky top-0 bg-white dark:bg-slate-800 z-10">
+					<tr class="bg-white dark:bg-slate-800 z-10">
 						<th colspan="6">
-							<form class="font-normal mx-auto rounded-xl flex relative mb-4 items-stretch pt-4">
-								@components.CSRF(s.Csrf_Token)
-								<input value={ props.search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
+							<form
+								hx-get="/app/inventory"
+								hx-trigger="submit"
+								hx-target="tbody"
+								hx-select="tbody"
+								hx-swap="outerHTML"
+								id="filter-inventory-form"
+								class="font-normal mx-auto rounded-xl flex relative mb-4 items-stretch pt-4"
+							>
+								<input oninput="this.form.requestSubmit()" value={ props.filter.search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
 								<button class="p-4 border flex items-center justify-center rounded-r-xl outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600">
 									<span class="h-8 w-8 icon-[heroicons-outline--search]"></span>
 								</button>
 							</form>
 						</th>
 					</tr>
-					<tr class="sticky top-24 bg-white dark:bg-slate-800 z-10">
+					<tr class="bg-white dark:bg-slate-800 z-10">
+						<th class="border-b dark:border-slate-600 p-3 text-left">
+							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
+								Name:    "storageLocations",
+								Value:   props.filter.storageLocations,
+								Options: props.storageLocationOptions,
+								Form:    "filter-inventory-form",
+							})
+						</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">
+							@components.TextInput(components.TextInputProps{
+								Name:      "minQuantity",
+								InputType: "number",
+								Required:  false,
+								Label:     "Min quantity",
+								Value:     strconv.Itoa(props.filter.minQuantity),
+								Form:      "filter-inventory-form",
+							})
+						</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">
+							<!--TODO: What to put here -->
+						</th>
+						<th class="border-b dark:border-slate-600 p-3 text-left">
+							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
+								Name:    "productIds",
+								Value:   props.filter.productIds,
+								Options: props.productIdOptions,
+								Form:    "filter-inventory-form",
+							})
+						</th>
+						<th class="border-b dark:border-slate-600 text-left p-0">
+							<div class="flex w-full">
+								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/app/inventory/new">
+									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
+								</a>
+							</div>
+						</th>
+					</tr>
+					<tr class="sticky top-0 bg-white dark:bg-slate-800 z-10">
 						<th class="border-b dark:border-slate-600 p-3 text-left">Bin</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">In stock</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">Batch Number</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">Product</th>
 						<th class="border-b dark:border-slate-600 text-left p-0">
 							<div class="flex w-full">
-								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/inventory/new">
+								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/app/inventory/new">
 									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
 								</a>
 							</div>
 						</th>
 					</tr>
 				</thead>
-				<tbody>
+				<tbody id="tbody">
+					if len(props.filteredItems) == 0 {
+						<tr><td colspan="5" class="p-4">No results</td></tr>
+					}
 					for _, item := range props.filteredItems {
 						<tr>
 							@Td(true) {
@@ -162,30 +208,41 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 				</tbody>
 				<tfoot>
 					<tr>
+						<!-- TODO: Provide some indication for non-js users that they need to submit the form manually after selecting an option down here -->
 						<td class="bg-white dark:bg-slate-800 sticky bottom-0 border-gray-200 dark:border-slate-600 border-t" colspan="6">
 							<div class="flex gap-2 py-2">
-								for _, paginationItem := range props.pagination {
-									<a href={ getUrl(props.search, props.perPage, paginationItem.to) } class={ getPaginationClass(paginationItem.to == props.page) }>
-										if paginationItem.paginationType == Back {
-											<span class="relative top-1 icon-[heroicons-outline--chevron-left]"></span>
-											Back
-										} else if paginationItem.paginationType == Next {
-											Next
-											<span class="relative top-1 icon-[heroicons-outline--chevron-right]"></span>
-										} else if paginationItem.paginationType == Number {
-											{ strconv.Itoa(paginationItem.to) }
-										} else if paginationItem.paginationType == Ellipsis {
-											<span class="relative top-0.5 icon-[heroicons-outline--ellipsis-horizontal]"></span>
-										}
-									</a>
-								}
+								<div id="pagination" hx-swap-oob="true" class="flex gap-2">
+									for _, paginationItem := range props.pagination {
+										<label
+											class={ getPaginationClass(paginationItem.to == props.page) }
+										>
+											<input
+												class="hidden"
+												form="filter-inventory-form"
+												name="page"
+												value={ strconv.Itoa(paginationItem.to) }
+												type="radio"
+											/>
+											if paginationItem.paginationType == Back {
+												<span class="relative top-1 icon-[heroicons-outline--chevron-left]"></span>
+												Back
+											} else if paginationItem.paginationType == Next {
+												Next
+												<span class="relative top-1 icon-[heroicons-outline--chevron-right]"></span>
+											} else if paginationItem.paginationType == Number {
+												{ strconv.Itoa(paginationItem.to) }
+											} else if paginationItem.paginationType == Ellipsis {
+												<span class="relative top-0.5 icon-[heroicons-outline--ellipsis-horizontal]"></span>
+											}
+										</label>
+									}
+								</div>
 								<label class="ml-auto px-2 py-1 border focus-within:bg-gray-200 dark:focus-within:bg-slate-600 duration-200 border-gray-200 dark:border-slate-600 rounded-sm flex gap-2 items-center">
 									Rows per page:
-									<select class="py-1 outline-none bg-transparent">
-										<option value="10">10</option>
-										<option value="20">20</option>
-										<option value="50">50</option>
-										<option value="100">100</option>
+									<select form="filter-inventory-form" name="perPage" class="py-1 outline-none bg-transparent">
+										for _, item := range [...]string{"10", "20", "50", "100"} {
+											<option value={ item } selected?={ item == strconv.Itoa(props.perPage) }>{ item }</option>
+										}
 									</select>
 								</label>
 							</div>
@@ -194,6 +251,23 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 				</tfoot>
 			</table>
 		</main>
+		<script>
+			const theForm = document.querySelector("#filter-inventory-form")
+			theForm.addEventListener("input", (e) => {
+				e.currentTarget.requestSubmit();
+			});
+			window.addEventListener("input", (e) => {
+				if (e.target.matches("[form='filter-inventory-form']")) {
+					theForm.requestSubmit();
+				}
+			});
+			document.querySelector("#filter-inventory-form").addEventListener("submit", () => {
+				event.preventDefault();
+				const params = new URLSearchParams(new FormData(event.target)).toString();
+				const url = window.location.pathname + '?' + params;
+				history.replaceState(null, '', url);
+			});
+		</script>
 	}
 }
 

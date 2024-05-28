@@ -1,195 +1,45 @@
-type HProps = Record<string, string | number | Signal<string | number> | ((e: Event) => void)>
-type HChildren = HTMLElement | string | Signal<HTMLElement | string | HTMLElement[]> | (HChildren)[]
+import htmx from "htmx.org"
+//@ts-ignore
+window.htmx = htmx;
 
-const insertAfter = (el: HTMLElement, newNode: Node, after: Node | null) => {
-    if (after?.nextSibling) {
-        el.insertBefore(newNode, after.nextSibling);
-    } else {
-        el.appendChild(newNode);
-    }
-};
+import { For, render } from 'solid-js/web';
+import html from 'solid-js/html';
+import { createEffect, createSignal } from 'solid-js';
 
-const processChildren = (el: HTMLElement, children: HChildren, after: Node | null): Node | null => {
-    if (Array.isArray(children)) {
-        let newAfter = after;
-        for (const child of children) {
-            newAfter = processChildren(el, child, newAfter)
-        }
-        return newAfter
-    } else if (typeof children === "string") {
-        const tn = document.createTextNode(children)
-        insertAfter(el, tn, after)
-        return tn
-    } else if (isSignal(children)) {
-        const beginMarker = document.createComment("Begin")
-        const endMarker = document.createComment("End")
-        insertAfter(el, beginMarker, after)
-        insertAfter(el, endMarker, beginMarker)
-        effect(() => {
-            let startNode = beginMarker.nextSibling!
-            while (startNode !== endMarker) {
-                const n = startNode
-                startNode = startNode.nextSibling!
-                n.remove()
-            }
-            processChildren(el, children.track(), beginMarker)
-        })
-        return endMarker
-    } else {
-        insertAfter(el, children, after)
-        return children
-    }
-}
-
-const applyProps = (el: HTMLElement, props: HProps) => {
-    for (const [k, v] of Object.entries(props)) {
-        if (k.startsWith("on:")) {
-            if (typeof v !== 'function') throw new Error("Invalid event handler")
-            el.addEventListener(k.slice(3), v)
-        } else if (typeof v === 'string' || typeof v === 'number') {
-            if (k === "value") {
-                (el as HTMLInputElement).value = v.toString();
-            } else {
-                el.setAttribute(k, v.toString())
-            }
-        } else if (isSignal(v)) {
-            effect(() => {
-                if (k === "value") {
-                    (el as HTMLInputElement).value = v.track().toString()
-                } else {
-                    el.setAttribute(k, v.track().toString())
-                }
-            })
-        } else {
-            throw new Error("Invalid property")
-        }
-    }
-}
-const _h = (tagName: string, props: HProps, children: HChildren = []) => {
-    const el = document.createElement(tagName)
-    applyProps(el, props)
-    processChildren(el, children, el.lastChild)
-    return el
-}
-
-const h: Record<string, (props: HProps, children?: HChildren) => HTMLElement> = new Proxy({}, {
-    get(_target, property: string) {
-        return (props: HProps, children: HChildren = []) => _h(property, props, children)
-    }
-})
-
-const observableSymbol = Symbol("observable")
-const isSignal = (t: unknown): t is Signal<unknown> => {
-    return (t as any)[observableSymbol];
-}
-type Signal<T> = {
-    [observableSymbol]: true
-    observe(fn: (v: T) => void, runInitial?: boolean): () => void;
-    set(newV: T): void;
-    track(): T;
-}
-
-type SignalContextItems = Set<Signal<any>>[]
-class SignalContext {
-    #ctx: SignalContextItems
-    constructor() {
-        this.#ctx = []
-    }
-    track(o: Signal<unknown>) {
-        if (this.#ctx.length === 0) {
-            return
-        }
-
-        this.#ctx[this.#ctx.length - 1].add(o)
-    }
-    newCtx() {
-        this.#ctx.push(new Set())
-    }
-    pop() {
-        return this.#ctx.pop()
-    }
-}
-const observableContext = new SignalContext()
-
-function assert(value: boolean): asserts value is true {
-    if (!value) {
-        throw new Error("Failed assertion")
-    }
-}
-
-const observable = <T>(initialValue: T): Signal<T> => {
-    let value = initialValue
-    const observers: Set<(v: T) => void> = new Set();
-
-    const o: Signal<T> = {
-        [observableSymbol]: true,
-        observe(fn, runInitial = true) {
-            if (runInitial) {
-                fn(value)
-            }
-            observers.add(fn)
-
-            return () => {
-                observers.delete(fn)
-            }
-        },
-        set(newV) {
-            const oldValue = value
-            value = newV
-            if (newV === oldValue) return;
-            for (const observer of observers) {
-                observer(value)
-            }
-        },
-        track() {
-            observableContext.track(o)
-            return value
-        }
-    }
-    return o
-}
-
-const derived = <T>(fn: () => T): Signal<T> => {
-    observableContext.newCtx()
-
-    const d = observable(fn())
-
-    const ctxSet = observableContext.pop()
-    assert(!!ctxSet)
-
-    for (const ctxItem of ctxSet!) {
-        ctxItem.observe(() => {
-            d.set(fn())
-        }, false)
-    }
-
-    return d
-}
-
-const effect = (fn: () => void) => {
-    observableContext.newCtx()
-    fn()
-    const ctxSet = observableContext.pop()
-    for (const ctxItem of ctxSet!) {
-        ctxItem.observe(() => {
-            fn()
-        }, false)
-    }
-}
-
-const FuzzySelectOptions = ({ $options, $focusedOption, $selectedId, onChange }: { $options: Signal<Option[]>, $selectedId: Signal<string>, onChange: (newSelectedId: string) => void, $focusedOption: Signal<string> }) => {
-    return derived(() => $options.track().map(option => {
-        const selected = derived(() => $selectedId.track() === option.value)
-        return h.div({
-            class: derived(() => `flex ${$focusedOption.track() === option.value ? 'bg-gray-300' : ''} ${selected.track() ? 'bg-gray-200' : ''}`),
-            'on:mousedown': () => {
-                onChange(option.value)
-            },
-        }, [
-            h.div({ class: "p-2" }, [derived(() => selected.track() ? "✔" : "○︎")]),
-            h.div({ class: "p-2" }, [option.text]),
-        ])
-    }))
+const FuzzySelectOptions = (props: {
+    options: Option[],
+    multiple: true,
+    selectedId: string[],
+    onSelect: (id: string) => void,
+    focusedOption: string,
+} | {
+    options: Option[],
+    multiple: false,
+    selectedId: string,
+    onSelect: (id: string) => void,
+    focusedOption: string,
+}) => {
+    return html`
+        <${For} each=${() => props.options}>
+            ${(option: Option) => {
+            const selected = () => typeof props.selectedId === "string" ? (props.selectedId === option.value) : props.selectedId.includes(option.value)
+            const className = () => `option-${option.value} flex ${props.focusedOption === option.value ? 'bg-gray-300 dark:bg-slate-800' : selected() ? 'bg-gray-200 dark:bg-slate-700' : ''}`
+            return html`
+                    <div
+                        class=${className}
+                        onMouseDown=${() => {
+                            props.onSelect(option.value)
+                        }}
+                    >
+                        <div class="p-2">
+                            <div class=${() => selected() ? "icon-[heroicons-outline--check]" : "icon-[heroicons-outline--plus-circle]"} />
+                        <//>
+                        <div class="p-2">${option.text}<//>
+                    <//>
+                `
+        }}
+        <//>
+    `;
 }
 
 
@@ -201,99 +51,176 @@ const clamp = (min: number, v: number, max: number) => {
     return v
 }
 
-const FuzzySelect = ({ $options, $selectedId }: { $options: Signal<Option[]>, $selectedId: Signal<string> }) => {
-    const focused = observable(false)
-    const $inputText = observable("")
-    const $selectedText = derived(() => $options.track().find(o => o.value === $selectedId.track())?.text || "")
-    const $mouseDownOnItem = observable(false)
-    const $focusedOption = observable($selectedId.track())
-    const $filteredOptions = derived(() => $options.track().filter(o => o.text.toLowerCase().includes($inputText.track().toLowerCase())))
+const FuzzySelect = (props: {
+    options: Option[],
+    selectedId: string[],
+    multiple: true,
+    setSelectedId: (newV: string[]) => void,
+    onBlur: () => void,
+} | {
+    options: Option[],
+    selectedId: string,
+    multiple: false,
+    setSelectedId: (newV: string) => void
+    onBlur: () => void,
+}) => {
+    const [focused, setFocused] = createSignal(false);
+    const [inputText, setInputText] = createSignal("");
+    const selectedText = () => {
+        if (!props.multiple) {
+            return props.options.find(o => o.value === props.selectedId)?.text || "";
+        }
+        return props.selectedId.map(i => props.options.find(o => o.value === i)!.text).join(", ");
+    }
+    const [mouseDownOnItem, setMouseDownOnItem] = createSignal(false);
+    const [focusedOption, setFocusedOption] = createSignal(typeof props.selectedId === "string" ? props.selectedId : props.selectedId[0]);
+    const filteredOptions = () => {
+        const baseFiltered = props.options.filter(o => o.text.toLowerCase().includes(inputText().toLowerCase()))
+        if (!props.multiple) {
+            return baseFiltered
+        }
+        return baseFiltered.concat(props.options.filter(o => props.selectedId.includes(o.value) && !baseFiltered.includes(o)))
+    }
 
-    return h.div(
-        { class: "w-min relative" },
-        [
-            h.input(
-                {
-                    class: "peer p-4 placeholder-black focus:placeholder-gray-400",
-                    value: $inputText,
-                    placeholder: $selectedText,
-                    'on:focus': (_e) => {
-                        const e = _e as FocusEvent & { currentTarget: HTMLInputElement }
-                        focused.set(true)
-                        e.currentTarget.setSelectionRange(0, e.currentTarget.value.length)
-                    },
-                    'on:blur': (_e) => {
-                        const e = _e as FocusEvent & { currentTarget: HTMLInputElement }
-                        if (!$mouseDownOnItem.track()) {
-                            $inputText.set("")
-                            focused.set(false)
-                        } else {
-                            e.currentTarget.focus()
-                        }
-                        $mouseDownOnItem.set(false)
-                    },
-                    'on:input': (e) => {
-                        $inputText.set((e.currentTarget as any).value)
-                    },
-                    'on:keydown': (_e) => {
-                        const e = _e as KeyboardEvent;
-                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            const focusedIndex = $filteredOptions.track().findIndex(o => o.value === $focusedOption.track())
-                            const newIndex = clamp(0, e.key === "ArrowUp" ? focusedIndex - 1 : focusedIndex + 1, $filteredOptions.track().length - 1)
-                            $focusedOption.set($filteredOptions.track()[newIndex].value)
-                            e.preventDefault()
-                        } else if (e.key === "Enter") {
-                            $selectedId.set($focusedOption.track())
-                            e.preventDefault()
-                        }
-                    },
-                }
-            ),
-            h.div(
-                {
-                    class: derived(() => `${focused.track() ? '' : 'hidden'} absolute top-full z-30 duration-500 flex flex-col bg-white shadow-md w-full rounded-b-md`)
-                },
-                FuzzySelectOptions({
-                    $options: $filteredOptions,
-                    $selectedId,
-                    $focusedOption,
-                    onChange: (newSelectedId) => {
-                        $selectedId.set(newSelectedId)
-                        $inputText.set("")
-                        $mouseDownOnItem.set(true)
+    const handleSelect = (newSelectedId: string) => {
+        if (props.multiple) {
+            props.setSelectedId(
+                props.selectedId.includes(newSelectedId)
+                    ? props.selectedId.filter(v => v != newSelectedId)
+                    : props.selectedId.concat(newSelectedId)
+            )
+        } else {
+            props.setSelectedId(newSelectedId)
+        }
+        if (!props.multiple) {
+            setInputText("")
+        }
+    }
+
+    let parentEl: HTMLElement | null = null;
+    createEffect(() => {
+        parentEl?.querySelector(`.option-${focusedOption()}`)?.scrollIntoView({block: "center"});
+    })
+
+    return html`
+        <div class="w-min relative" ref=${(e: HTMLElement) => parentEl = e}>
+            <input
+                class=${() => `peer p-4 placeholder-black dark:placeholder-white focus:placeholder-gray-400 dark:focus:placeholder-slate-400 bg-transparent border dark:border-slate-600 rounded-md ${focused() ? 'rounded-b-none' : ''}`}
+                value=${inputText}
+                placeholder=${selectedText}
+                onFocus=${(e: FocusEvent & { currentTarget: HTMLInputElement }) => {
+                    setFocused(true)
+                    e.currentTarget.setSelectionRange(0, e.currentTarget.value.length)
+                }}
+                onBlur=${(e: FocusEvent & { currentTarget: HTMLInputElement }) => {
+                    if (!mouseDownOnItem()) {
+                        setInputText("")
+                        setFocused(false)
+                        props.onBlur()
+                    } else {
+                        e.currentTarget.focus()
                     }
-                })
-            ),
-        ]
-    )
+                    setMouseDownOnItem(false)
+                }}
+                onInput=${(e: FocusEvent & { currentTarget: HTMLInputElement }) => {
+                    setInputText(e.currentTarget.value)
+                    setFocusedOption(filteredOptions()[0].value)
+                }}
+                onKeydown=${(e: KeyboardEvent) => {
+                    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                        const focusedIndex = filteredOptions().findIndex(o => o.value === focusedOption())
+                        const newIndex = clamp(0, e.key === "ArrowUp" ? focusedIndex - 1 : focusedIndex + 1, filteredOptions().length - 1)
+                        setFocusedOption(filteredOptions()[newIndex].value)
+                        e.preventDefault()
+                    } else if (e.key === "Enter") {
+                        handleSelect(focusedOption())
+                        e.preventDefault()
+                    }
+                }}
+            />
+            <div
+                class=${() => `${focused() ? '' : 'hidden'} absolute top-full z-30 duration-500 flex flex-col dark:bg-slate-600 bg-white shadow-md dark:shadow-slate-400 w-full rounded-b-md max-h-[21.5rem] overflow-auto`}
+            >
+                <${FuzzySelectOptions}
+                    multiple=${() => props.multiple}
+                    options=${filteredOptions}
+                    selectedId=${() => props.selectedId}
+                    focusedOption=${focusedOption}
+                    onSelect=${(newSelectedId: string) => {
+                        handleSelect(newSelectedId)
+                        setMouseDownOnItem(true)
+                    }}
+                />
+            <//>
+        <//>
+    `
 }
 
 for (const el of document.querySelectorAll(".fuzzy-select")) {
-    const select = el.querySelector("select")!
-    select.classList.toggle("hidden")
+    const select = el.querySelector("select")!;
+    select.classList.toggle("hidden");
+    const multiple = select.multiple;
 
-    console.log(select.value)
-    const $selectedId = observable(select.value);
-    const $options = observable(Array.from(el.querySelectorAll("option")).map(op => ({
-        text: op.innerText,
-        value: op.value,
-    })))
+    if (multiple) {
+        const [selectedId, setSelectedId] = createSignal(Array.from(select.selectedOptions).map(o => o.value));
+        const [options, _setOptions] = createSignal(Array.from(el.querySelectorAll("option")).map(op => ({
+            text: op.innerText,
+            value: op.value,
+        })))
 
-    let initial = true;
-    effect(() => {
-        console.log("RUnning this")
-        select.value = $selectedId.track()
-        if (!initial) {
-            select.dispatchEvent(new Event('input', {
-                bubbles: true,
-                cancelable: true,
-            }))
-        } else {
-            initial = false
-        }
-    })
+        let initial = true;
+        createEffect(() => {
+            for (const o of select.options) {
+                o.selected = selectedId().includes(o.value);
+            }
+            if (!initial) {
+                select.dispatchEvent(new Event('input', {
+                    bubbles: true,
+                    cancelable: true,
+                }))
+            } else {
+                initial = false
+            }
+        })
+        const onBlur = () => {}
 
-    el
-        .querySelector('.js-mount')!
-        .appendChild(FuzzySelect({ $options, $selectedId }))
+        render(() => html`
+            <${FuzzySelect}
+                multiple=${true}
+                options=${options}
+                selectedId=${selectedId}
+                setSelectedId=${setSelectedId}
+                onBlur=${onBlur}
+            />
+       `, el.querySelector('.js-mount')!)
+    } else {
+        const [selectedId, setSelectedId] = createSignal(select.value);
+        const [options, _setOptions] = createSignal(Array.from(el.querySelectorAll("option")).map(op => ({
+            text: op.innerText,
+            value: op.value,
+        })))
+
+        let initial = true;
+        createEffect(() => {
+            select.value = selectedId()
+            if (!initial) {
+                select.dispatchEvent(new Event('input', {
+                    bubbles: true,
+                    cancelable: true,
+                }))
+            } else {
+                initial = false
+            }
+        })
+
+        render(() => html`
+            <${FuzzySelect}
+                multiple=${false}
+                options=${options}
+                selectedId=${selectedId}
+                setSelectedId=${setSelectedId}
+                onBlur=${onBlur}
+            />
+       `, el.querySelector('.js-mount')!)
+    }
 }

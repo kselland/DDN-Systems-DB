@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -185,6 +186,7 @@ func getInventoryItem(id int) (*InventoryItem, error) {
 }
 
 func getPagination(numPages int, perPage int, page int) []PaginationItem {
+	println(numPages, perPage, page)
 	var pagination []PaginationItem
 
 	if page != 1 {
@@ -215,7 +217,7 @@ func getPagination(numPages int, perPage int, page int) []PaginationItem {
 		})
 	}
 
-	if page != numPages {
+	if page != numPages && numPages != 0 {
 		pagination = append(pagination, PaginationItem{
 			paginationType: Next,
 			to:             page + 1,
@@ -229,8 +231,44 @@ type CountStruct struct {
 	Count int
 }
 
+type Filter struct {
+	search              string
+	storageLocationsStr string
+	storageLocations    []string
+	minQuantity         int
+	batchNumbersStr     string
+	batchNumbers        []string
+	productIdsStr       string
+	productIds          []string
+}
+
+func getFilter(r *http.Request) Filter {
+	filter := Filter{}
+
+	filter.search = r.URL.Query().Get("search")
+
+	// TODO: Theoretically if a bin had a , in it then this approach would break
+	filter.storageLocations = r.URL.Query()["storageLocations"]
+	filter.storageLocationsStr = strings.Join(filter.storageLocations, ",")
+
+	minQuantityStr := r.URL.Query().Get("minQuantity")
+	minQuantity, err := strconv.Atoi(minQuantityStr)
+	if err != nil {
+		minQuantity = 0
+	}
+	filter.minQuantity = minQuantity
+
+	filter.batchNumbers = r.URL.Query()["batchNumbers"]
+	filter.batchNumbersStr = strings.Join(filter.batchNumbers, ",")
+
+	filter.productIds = r.URL.Query()["productIds"]
+	filter.productIdsStr = strings.Join(filter.productIds, ",")
+
+	return filter
+}
+
 func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
-	search := r.URL.Query().Get("search")
+	filter := getFilter(r)
 
 	page, pageErr := strconv.Atoi(r.URL.Query().Get("page"))
 	if pageErr != nil {
@@ -241,7 +279,54 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 		perPage = 10
 	}
 
+	// TODO: Figure out a way to remove the duplication and avoid doing this work twice
 	query, err := db.Db.Query(`
+		SELECT 
+			COUNT(*) as count
+		FROM
+			inventory_items i
+		LEFT JOIN
+			storage_locations s
+		ON
+			i.storage_location_id = s.id
+		LEFT JOIN
+			products p
+		ON
+			i.product_id = p.id
+		WHERE
+			(
+				i.id::text ILIKE '%' || $1 || '%'
+				OR i.product_id::text ILIKE '%' || $1 || '%'
+				OR p.name ILIKE '%' || $1 || '%'
+				OR i.quantity::text ILIKE '%' || $1 || '%'
+				OR i.batch_number::text ILIKE '%' || $1 || '%'
+				OR s.bin ILIKE '%' || $1 || '%'
+			)
+			AND ($2 = '' OR i.storage_location_id = ANY (string_to_array($2, ',')::int[]))
+			AND i.quantity >= $3
+			AND ($4 = '' OR i.batch_number = ANY (string_to_array($4, ',')::int[]))
+			AND ($5 = '' OR i.product_id = ANY(string_to_array($5, ',')::int[]))
+		`,
+		filter.search,
+		filter.storageLocationsStr,
+		filter.minQuantity,
+		filter.batchNumbersStr,
+		filter.productIdsStr,
+	)
+	if err != nil {
+		return err
+	}
+	countStruct, err := db.GetFirst[CountStruct](query)
+	if err != nil {
+		return err
+	}
+
+	numPages := ceilDivide(countStruct.Count, perPage)
+	if page > numPages {
+		page = 1
+	}
+
+	query, err = db.Db.Query(`
 		SELECT 
 			i.id,
 			i.product_id,
@@ -261,17 +346,31 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 		ON
 			i.product_id = p.id
 		WHERE
-			i.id::text ILIKE '%' || $1 || '%'
-			OR i.product_id::text ILIKE '%' || $1 || '%'
-			OR p.name ILIKE '%' || $1 || '%'
-			OR i.quantity::text ILIKE '%' || $1 || '%'
-			OR i.batch_number::text ILIKE '%' || $1 || '%'
-			OR s.bin ILIKE '%' || $1 || '%'
+			(
+				i.id::text ILIKE '%' || $1 || '%'
+				OR i.product_id::text ILIKE '%' || $1 || '%'
+				OR p.name ILIKE '%' || $1 || '%'
+				OR i.quantity::text ILIKE '%' || $1 || '%'
+				OR i.batch_number::text ILIKE '%' || $1 || '%'
+				OR s.bin ILIKE '%' || $1 || '%'
+			)
+			AND ($2 = '' OR i.storage_location_id = ANY (string_to_array($2, ',')::int[]))
+			AND i.quantity >= $3
+			AND ($4 = '' OR i.batch_number = ANY (string_to_array($4, ',')::int[]))
+			AND ($5 = '' OR i.product_id = ANY(string_to_array($5, ',')::int[]))
 		LIMIT
-		    $2
+		    $6
 		OFFSET
-		    $3
-	`, search, perPage, (page-1)*perPage)
+		    $7
+		`,
+		filter.search,
+		filter.storageLocationsStr,
+		filter.minQuantity,
+		filter.batchNumbersStr,
+		filter.productIdsStr,
+		perPage,
+		(page-1)*perPage,
+	)
 	if err != nil {
 		return err
 	}
@@ -280,13 +379,20 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	query, err = db.Db.Query(`
-		SELECT COUNT(*) as count FROM inventory_items;
-	`)
+	query, err = db.Db.Query(`SELECT id value, bin text FROM storage_locations`)
 	if err != nil {
 		return err
 	}
-	countStruct, err := db.GetFirst[CountStruct](query)
+	storageLocationOptions, err := db.GetTable[components.Option](query)
+	if err != nil {
+		return err
+	}
+
+	query, err = db.Db.Query(`SELECT id value, name text FROM products`)
+	if err != nil {
+		return err
+	}
+	productIdOptions, err := db.GetTable[components.Option](query)
 	if err != nil {
 		return err
 	}
@@ -294,11 +400,13 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 	return indexTemplate(
 		s,
 		IndexTemplateProps{
-			filteredItems: inventoryItems,
-			search:        search,
-			pagination:    getPagination(ceilDivide(countStruct.Count, perPage), perPage, page),
-			perPage:       perPage,
-			page:          page,
+			filter:                 filter,
+			storageLocationOptions: storageLocationOptions,
+			productIdOptions:       productIdOptions,
+			filteredItems:          inventoryItems,
+			pagination:             getPagination(numPages, perPage, page),
+			perPage:                perPage,
+			page:                   page,
 		},
 	).Render(context.Background(), w)
 }

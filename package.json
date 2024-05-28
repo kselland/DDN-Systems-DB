@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tailwindcss build -o static/css/tailwind.css && esbuild static/js/index.ts --outfile=static/js/index.js",
+    "build": "tailwindcss build -o static/css/tailwind.css && esbuild static/js/index.ts --outfile=static/js/index.js --bundle --sourcemap",
     "watch:css": "tailwindcss build -o static/css/tailwind.css --watch",
-    "watch:js": "esbuild static/js/index.ts --outfile=static/js/index.js --watch"
+    "watch:js": "esbuild static/js/index.ts --outfile=static/js/index.js --watch --bundle --sourcemap"
   },
   "author": "",
   "license": "ISC",
@@ -15,10 +15,13 @@
     "@iconify-json/heroicons": "^1.1.21",
     "@iconify-json/heroicons-outline": "^1.1.10",
     "@iconify/tailwind": "^1.0.1",
+    "solid-js": "^1.8.17",
     "tailwindcss": "^3.4.1"
   },
   "dependencies": {
     "esbuild": "^0.20.2",
+    "htmx": "^0.0.2",
+    "htmx.org": "^1.9.12",
     "typescript": "^5.4.5"
   }
 }
