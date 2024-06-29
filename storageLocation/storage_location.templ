@@ -1,51 +1,58 @@
 package storageLocation
 
 import "ddn/ddn/components"
-import "ddn/ddn/color"
 import "fmt"
 import "strconv"
-import "ddn/ddn/session"
+import "ddn/ddn/appPaths"
+import "ddn/ddn/db"
 
-templ newTemplate(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ newTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout("Create storage location | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4"><a href="/app/storage-locations">&#8592;</a> New Storage location</h1>
+		<h1 class="p-4 bg-blue-400 mb-4"><a href={ appPaths.StorageLocationNew.WithParams(map[string]string{}) }>&#8592;</a> New Storage location</h1>
 		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
-templ viewTemplate(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ viewTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout(fmt.Sprintf("Storage Location: %s | DDN", fsl.Bin)) {
-		<div class="p-4 bg-blue-400"><a href="/app/storage-locations">&#8592;</a> Editing storage location</div>
+		<div class="p-4 bg-blue-400"><a href={ appPaths.StorageLocationListing.WithParams(map[string]string{}) }>&#8592;</a> Editing storage location</div>
 		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
-func getStorageLocationUrl(p StorageLocation) templ.SafeURL {
+func getStorageLocationUrl(p db.StorageLocation) templ.SafeURL {
 	return templ.URL("/storage-location/" + strconv.Itoa(p.Id))
 }
 
-func deleteStorageLocationUrl(p StorageLocation) templ.SafeURL {
+func deleteStorageLocationUrl(p db.StorageLocation) templ.SafeURL {
 	return templ.URL("/storage-location/" + strconv.Itoa(p.Id) + "/delete")
 }
 
-templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
+templ indexTemplate(s *db.Session, storageLocations []db.StorageLocation) {
 	@components.RootLayout("Storage Locations | DDN") {
 		<h1 class="p-4 bg-blue-400 mb-4">
-			<a href="/">&#8592;</a>
+			<a href={ appPaths.Dashboard.WithParams(map[string]string{}) }>&#8592;</a>
 			Storage Locations
 		</h1>
 		<main class="p-4">
 			@components.Table() {
 				<thead>
 					@components.Tr() {
-						@components.Th() {
+						@components.Th(true) {
 							Bin
 						}
-						@components.Th() {
+						@components.Th(true) {
 							Size <span class="text-gray-400">(</span>L<span class="text-gray-400">x</span>W<span class="text-gray-400">x</span>H<span class="text-gray-400">)</span>
 						}
-						@components.Th() {
-							<a href="/app/storage-locations/new" class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
+						@components.Th(false) {
+							<div class="flex w-full">
+								<a
+									class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3"
+									href={ appPaths.StorageLocationNew.WithNoParams() }
+								>
+									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
+								</a>
+							</div>
 						}
 					}
 				</thead>
@@ -71,7 +78,7 @@ templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
 									</form>
 									<a
 										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
-										href={ templ.URL(fmt.Sprintf("/app/storage-location/%d", storageLocation.Id)) }
+										href={ appPaths.StorageLocation.WithParams(map[string]string{"id": string(storageLocation.Id)}) }
 										aria-label={ "View and edit storage location: " + storageLocation.Bin }
 									>
 										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
@@ -86,7 +93,7 @@ templ indexTemplate(s *session.Session, storageLocations []StorageLocation) {
 	}
 }
 
-templ EditableStorageLocationComponent(s *session.Session, fsl FormStorageLocation, v StorageLocationValidation, colors []color.Color) {
+templ EditableStorageLocationComponent(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md dark:shadow-slate-400 shadow-md" method="POST">
 		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
@@ -108,7 +115,7 @@ templ EditableStorageLocationComponent(s *session.Session, fsl FormStorageLocati
 					<div class="update-data-actions flex flex-row-reverse">
 						<button class="submit-button text-4xl">&check;</button>
 						if fsl.Id == nil {
-							<a href="/app/storage-locations" class="cancel-button text-4xl">&times;</a>
+							<a href={ appPaths.StorageLocationListing.WithParams(map[string]string {}) } class="cancel-button text-4xl">&times;</a>
 						} else {
 							<button type="reset" class="cancel-button text-4xl">&times;</button>
 						}

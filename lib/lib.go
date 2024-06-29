@@ -1,6 +1,7 @@
 package lib
 
 import (
+	_ "ddn/ddn/dotenv"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"

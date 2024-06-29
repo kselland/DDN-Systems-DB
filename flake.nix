@@ -20,7 +20,11 @@
             go
             (templ system)
             gopls
+            typescript
+            nodePackages_latest.typescript-language-server
             air
+            flyctl
+            tailwindcss-language-server
             # Add any other dependencies here
           ];
 

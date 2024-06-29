@@ -2,10 +2,9 @@ package inventoryItem
 
 import (
 	"context"
-	"ddn/ddn/components"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
-	"ddn/ddn/session"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,173 +14,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type InventoryItem struct {
-	Id                  int
-	Product_Id          int
-	Quantity            int
-	Batch_Number        int
-	Storage_Location_Id int
-}
-
-type DisplayableInventoryItem struct {
-	Id                   int
-	Product_Id           int
-	Product_Name         string
-	Quantity             int
-	Batch_Number         int
-	Storage_Location_Bin string
-	Storage_Location_Id  int
-}
-
-type FormInventoryItem struct {
-	Id                  *int
-	Product_Id          string
-	Quantity            string
-	Batch_Number        string
-	Storage_Location_Id string
-}
-
-func (item InventoryItem) toFormData() FormInventoryItem {
-	return FormInventoryItem{
-		Product_Id:          strconv.Itoa(item.Product_Id),
-		Quantity:            strconv.Itoa(item.Quantity),
-		Batch_Number:        strconv.Itoa(item.Batch_Number),
-		Storage_Location_Id: strconv.Itoa(item.Storage_Location_Id),
-		Id:                  &item.Id,
-	}
-}
-
-func getFormDataFromPost(r *http.Request, id *int) FormInventoryItem {
-	return FormInventoryItem{
-		Id:                  id,
-		Product_Id:          r.PostFormValue("product_id"),
-		Quantity:            r.PostFormValue("quantity"),
-		Batch_Number:        r.PostFormValue("batch_number"),
-		Storage_Location_Id: r.PostFormValue("storage_location_id"),
-	}
-}
-
-type InventoryItemValidation struct {
-	Root                string
-	Product_Id          string
-	Quantity            string
-	Batch_Number        string
-	Storage_Location_Id string
-}
-
-func (formData FormInventoryItem) validate() (InventoryItemValidation, *InventoryItem) {
-	valid := true
-	validation := InventoryItemValidation{}
-
-	var productId int
-	var productIdErr error
-	if formData.Product_Id == "" {
-		validation.Product_Id = "Product id is required"
-		valid = false
-	} else if productId, productIdErr = strconv.Atoi(formData.Product_Id); productIdErr != nil {
-		validation.Product_Id = "Product id must be an integer"
-		valid = false
-	} else {
-		// TODO: Ensure the product exists in the db
-	}
-
-	var quantity int
-	var quantityErr error
-	if formData.Quantity == "" {
-		validation.Quantity = "Quantity is required"
-		valid = false
-	} else if quantity, quantityErr = strconv.Atoi(formData.Quantity); quantityErr != nil {
-		validation.Quantity = "Quantity must be an integer"
-		valid = false
-	}
-
-	var batchNumber int
-	var batchNumberErr error
-	if formData.Batch_Number == "" {
-		validation.Batch_Number = "Batch number is required"
-		valid = false
-	} else if batchNumber, batchNumberErr = strconv.Atoi(formData.Batch_Number); batchNumberErr != nil {
-		validation.Batch_Number = "Batch number must be an integer"
-		valid = false
-	}
-
-	var storageLocationId int
-	var storageLocationIdErr error
-	if formData.Storage_Location_Id == "" {
-		validation.Storage_Location_Id = "Storage location is required"
-		valid = false
-	} else if storageLocationId, storageLocationIdErr = strconv.Atoi(formData.Storage_Location_Id); storageLocationIdErr != nil {
-		validation.Storage_Location_Id = "Storage location id must be an integer"
-		valid = false
-	} else {
-		// TODO: Ensure the storage location exists in the db
-	}
-
-	if !valid {
-		if validation.Root == "" {
-			validation.Root = "There are errors with your submission"
-		}
-		return validation, nil
-	}
-
-	return validation, &InventoryItem{
-		Product_Id:          productId,
-		Quantity:            quantity,
-		Batch_Number:        batchNumber,
-		Storage_Location_Id: storageLocationId,
-	}
-}
-
 type EditableInventoryItemProps struct {
-	FormInventoryItem FormInventoryItem
-	Validation        InventoryItemValidation
+	FormInventoryItem db.FormInventoryItem
+	Validation        db.InventoryItemValidation
 	Id                *int
-}
-
-func getProductOptions() ([]components.Option, error) {
-	query, err := db.Db.Query(`
-		SELECT
-			id value,
-			name text
-		FROM
-			products
-	`)
-	if err != nil {
-		return nil, err
-	}
-	return db.GetTable[components.Option](query)
-}
-
-func getStorageLocationOptions() ([]components.Option, error) {
-	query, err := db.Db.Query(`
-		SELECT
-			id value,
-			bin text
-		FROM
-			storage_locations
-	`)
-	if err != nil {
-		return nil, err
-	}
-	return db.GetTable[components.Option](query)
-}
-
-func getInventoryItem(id int) (*InventoryItem, error) {
-	query, err := db.Db.Query("SELECT * FROM inventory_items WHERE id = $1", id)
-	if err != nil {
-		return nil, err
-	}
-	result, err := db.GetTable[InventoryItem](query)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) == 0 {
-		return nil, &lib.RequestError{
-			Message:    "Not Found",
-			StatusCode: 404,
-		}
-	}
-	return &result[0], nil
 }
 
 func getPagination(numPages int, perPage int, page int) []PaginationItem {
@@ -225,47 +61,32 @@ func getPagination(numPages int, perPage int, page int) []PaginationItem {
 	return pagination
 }
 
-type CountStruct struct {
-	Count int
-}
+func getFilter(r *http.Request) db.InventoryItemsFilter {
+	filter := db.InventoryItemsFilter{}
 
-type Filter struct {
-	search              string
-	storageLocationsStr string
-	storageLocations    []string
-	minQuantity         int
-	batchNumbersStr     string
-	batchNumbers        []string
-	productIdsStr       string
-	productIds          []string
-}
-
-func getFilter(r *http.Request) Filter {
-	filter := Filter{}
-
-	filter.search = r.URL.Query().Get("search")
+	filter.Search = r.URL.Query().Get("search")
 
 	// TODO: Theoretically if a bin had a , in it then this approach would break
-	filter.storageLocations = r.URL.Query()["storageLocations"]
-	filter.storageLocationsStr = strings.Join(filter.storageLocations, ",")
+	filter.StorageLocations = r.URL.Query()["storageLocations"]
+	filter.StorageLocationsStr = strings.Join(filter.StorageLocations, ",")
 
 	minQuantityStr := r.URL.Query().Get("minQuantity")
 	minQuantity, err := strconv.Atoi(minQuantityStr)
 	if err != nil {
 		minQuantity = 0
 	}
-	filter.minQuantity = minQuantity
+	filter.MinQuantity = minQuantity
 
-	filter.batchNumbers = r.URL.Query()["batchNumbers"]
-	filter.batchNumbersStr = strings.Join(filter.batchNumbers, ",")
+	filter.BatchNumbers = r.URL.Query()["batchNumbers"]
+	filter.BatchNumbersStr = strings.Join(filter.BatchNumbers, ",")
 
-	filter.productIds = r.URL.Query()["productIds"]
-	filter.productIdsStr = strings.Join(filter.productIds, ",")
+	filter.ProductIds = r.URL.Query()["productIds"]
+	filter.ProductIdsStr = strings.Join(filter.ProductIds, ",")
 
 	return filter
 }
 
-func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
+func IndexPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 	filter := getFilter(r)
 
 	page, pageErr := strconv.Atoi(r.URL.Query().Get("page"))
@@ -277,120 +98,32 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 		perPage = 10
 	}
 
-	// TODO: Figure out a way to remove the duplication and avoid doing this work twice
-	query, err := db.Db.Query(`
-		SELECT 
-			COUNT(*) as count
-		FROM
-			inventory_items i
-		LEFT JOIN
-			storage_locations s
-		ON
-			i.storage_location_id = s.id
-		LEFT JOIN
-			products p
-		ON
-			i.product_id = p.id
-		WHERE
-			(
-				i.id::text ILIKE '%' || $1 || '%'
-				OR i.product_id::text ILIKE '%' || $1 || '%'
-				OR p.name ILIKE '%' || $1 || '%'
-				OR i.quantity::text ILIKE '%' || $1 || '%'
-				OR i.batch_number::text ILIKE '%' || $1 || '%'
-				OR s.bin ILIKE '%' || $1 || '%'
-			)
-			AND ($2 = '' OR i.storage_location_id = ANY (string_to_array($2, ',')::int[]))
-			AND i.quantity >= $3
-			AND ($4 = '' OR i.batch_number = ANY (string_to_array($4, ',')::int[]))
-			AND ($5 = '' OR i.product_id = ANY(string_to_array($5, ',')::int[]))
-		`,
-		filter.search,
-		filter.storageLocationsStr,
-		filter.minQuantity,
-		filter.batchNumbersStr,
-		filter.productIdsStr,
-	)
-	if err != nil {
-		return err
-	}
-	countStruct, err := db.GetFirst[CountStruct](query)
+	count, err := db.CountFilteredInventoryItems(filter)
 	if err != nil {
 		return err
 	}
 
-	numPages := ceilDivide(countStruct.Count, perPage)
+	numPages := ceilDivide(*count, perPage)
 	if page > numPages {
 		page = 1
 	}
 
-	query, err = db.Db.Query(`
-		SELECT 
-			i.id,
-			i.product_id,
-			p.name product_name,
-			i.quantity,
-			i.batch_number,
-			s.bin storage_location_bin,
-			i.storage_location_id
-		FROM
-			inventory_items i
-		LEFT JOIN
-			storage_locations s
-		ON
-			i.storage_location_id = s.id
-		LEFT JOIN
-			products p
-		ON
-			i.product_id = p.id
-		WHERE
-			(
-				i.id::text ILIKE '%' || $1 || '%'
-				OR i.product_id::text ILIKE '%' || $1 || '%'
-				OR p.name ILIKE '%' || $1 || '%'
-				OR i.quantity::text ILIKE '%' || $1 || '%'
-				OR i.batch_number::text ILIKE '%' || $1 || '%'
-				OR s.bin ILIKE '%' || $1 || '%'
-			)
-			AND ($2 = '' OR i.storage_location_id = ANY (string_to_array($2, ',')::int[]))
-			AND i.quantity >= $3
-			AND ($4 = '' OR i.batch_number = ANY (string_to_array($4, ',')::int[]))
-			AND ($5 = '' OR i.product_id = ANY(string_to_array($5, ',')::int[]))
-		LIMIT
-		    $6
-		OFFSET
-		    $7
-		`,
-		filter.search,
-		filter.storageLocationsStr,
-		filter.minQuantity,
-		filter.batchNumbersStr,
-		filter.productIdsStr,
-		perPage,
-		(page-1)*perPage,
-	)
-	if err != nil {
-		return err
-	}
-	inventoryItems, err := db.GetTable[DisplayableInventoryItem](query)
+	inventoryItems, err := db.GetFilteredDisplayableInventoryItems(filter, perPage, page)
 	if err != nil {
 		return err
 	}
 
-	query, err = db.Db.Query(`SELECT id value, bin text FROM storage_locations`)
-	if err != nil {
-		return err
-	}
-	storageLocationOptions, err := db.GetTable[components.Option](query)
+	storageLocationOptions, err := db.GetStorageLocationOptions()
 	if err != nil {
 		return err
 	}
 
-	query, err = db.Db.Query(`SELECT id value, name text FROM products`)
+	productIdOptions, err := db.GetProductOptions()
 	if err != nil {
 		return err
 	}
-	productIdOptions, err := db.GetTable[components.Option](query)
+
+	batchNumberOptions, err := db.GetBatchNumberOptions()
 	if err != nil {
 		return err
 	}
@@ -399,9 +132,10 @@ func IndexPage(s *session.Session, w http.ResponseWriter, r *http.Request) error
 		s,
 		IndexTemplateProps{
 			filter:                 filter,
-			storageLocationOptions: storageLocationOptions,
+			storageLocationOptions: *storageLocationOptions,
 			productIdOptions:       productIdOptions,
-			filteredItems:          inventoryItems,
+			batchNumberOptions:     batchNumberOptions,
+			filteredItems:          *inventoryItems,
 			pagination:             getPagination(numPages, perPage, page),
 			perPage:                perPage,
 			page:                   page,
@@ -418,7 +152,7 @@ func ceilDivide(a int, b int) int {
 	return result
 }
 
-func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
+func ViewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 	idString := mux.Vars(r)["id"]
 
 	id, err := strconv.Atoi(idString)
@@ -429,25 +163,25 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 		}
 	}
 
-	inventoryItem, err := getInventoryItem(id)
+	inventoryItem, err := db.GetInventoryItem(id)
 	if err != nil {
 		return nil
 	}
 
-	productOptions, err := getProductOptions()
+	productOptions, err := db.GetProductOptions()
 	if err != nil {
 		return nil
 	}
 
-	storageLocationOptions, err := getStorageLocationOptions()
+	storageLocationOptions, err := db.GetStorageLocationOptions()
 	if err != nil {
 		return nil
 	}
 
 	if r.Method == "POST" {
-		formInventoryItem := getFormDataFromPost(r, &id)
+		formInventoryItem := db.GetFormInventoryItemFromPost(r, &id)
 
-		validation, inventoryItem := formInventoryItem.validate()
+		validation, inventoryItem := formInventoryItem.Validate()
 
 		if inventoryItem == nil {
 			return viewTemplate(
@@ -455,37 +189,20 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 				formInventoryItem,
 				validation,
 				productOptions,
-				storageLocationOptions,
+				*storageLocationOptions,
 			).Render(context.Background(), w)
 		}
 
-		_, err := db.Db.Exec(
-			`
-				UPDATE
-					inventory_items
-				SET 
-                    storage_location_id = $1,
-                    product_id          = $2,
-                    batch_number        = $3,
-                    quantity            = $4
-				WHERE
-					id = $5
-			`,
-			inventoryItem.Storage_Location_Id,
-			inventoryItem.Product_Id,
-			inventoryItem.Batch_Number,
-			inventoryItem.Quantity,
-			id,
-		)
+		err := db.UpdateInventoryItem(id, *inventoryItem)
 		if err != nil {
 			return viewTemplate(
 				s,
 				formInventoryItem,
-				InventoryItemValidation{
+				db.InventoryItemValidation{
 					Root: "Failed to update inventory  in DB",
 				},
 				productOptions,
-				storageLocationOptions,
+				*storageLocationOptions,
 			).Render(context.Background(), w)
 		}
 
@@ -495,56 +212,50 @@ func ViewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error 
 
 	return viewTemplate(
 		s,
-		inventoryItem.toFormData(),
-		InventoryItemValidation{},
+		inventoryItem.ToFormData(),
+		db.InventoryItemValidation{},
 		productOptions,
-		storageLocationOptions,
+		*storageLocationOptions,
 	).Render(context.Background(), w)
 }
 
-func DeletePage(w http.ResponseWriter, r *http.Request) error {
-	id := mux.Vars(r)["id"]
+func DeletePage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
+	idStr := mux.Vars(r)["id"]
 
-	query, err := db.Db.Query("SELECT * FROM inventory_items WHERE id = $1", id)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return err
 	}
 
-	inventoryItems, err := db.GetTable[InventoryItem](query)
-	if err != nil {
-		return err
-	}
+	inventoryItem, err := db.GetInventoryItem(id)
 
-	if len(inventoryItems) == 0 {
+	if inventoryItem == nil {
 		return &lib.RequestError{
 			Message:    "Not Found",
 			StatusCode: 404,
 		}
 	}
 
-	_, err2 := db.Db.Exec("DELETE FROM inventory_items WHERE id = $1", id)
-	if err2 != nil {
-		return err2
-	}
+	db.DeleteInventoryItem(id)
 
 	http.Redirect(w, r, "/app/inventory", http.StatusSeeOther)
 	return nil
 }
 
-func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
-	productOptions, err := getProductOptions()
+func NewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
+	productOptions, err := db.GetProductOptions()
 	if err != nil {
-		return nil
+		return err
 	}
 
-	storageLocationOptions, err := getStorageLocationOptions()
+	storageLocationOptions, err := db.GetStorageLocationOptions()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if r.Method == "POST" {
-		formInventoryItem := getFormDataFromPost(r, nil)
-		validation, inventoryItem := formInventoryItem.validate()
+		formInventoryItem := db.GetFormInventoryItemFromPost(r, nil)
+		validation, inventoryItem := formInventoryItem.Validate()
 
 		if inventoryItem == nil {
 			return newTemplate(
@@ -552,31 +263,18 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 				formInventoryItem,
 				validation,
 				productOptions,
-				storageLocationOptions,
+				*storageLocationOptions,
 			).Render(context.Background(), w)
 		}
 
-		_, err := db.Db.Exec(
-			`
-				INSERT INTO inventory_items (
-                    storage_location_id,
-                    product_id,
-                    quantity,
-                    batch_number
-				) VALUES ($1, $2, $3, $4)
-			`,
-			inventoryItem.Storage_Location_Id,
-			inventoryItem.Product_Id,
-			inventoryItem.Quantity,
-			inventoryItem.Batch_Number,
-		)
+		err := db.InsertInventoryItem(*inventoryItem)
 		if err != nil {
 			return newTemplate(
 				s,
 				formInventoryItem,
-				InventoryItemValidation{Root: "Error saving inventory to database"},
+				db.InventoryItemValidation{Root: "Error saving inventory to database"},
 				productOptions,
-				storageLocationOptions,
+				*storageLocationOptions,
 			).Render(context.Background(), w)
 		}
 
@@ -587,9 +285,62 @@ func NewPage(s *session.Session, w http.ResponseWriter, r *http.Request) error {
 
 	return newTemplate(
 		s,
-		FormInventoryItem{},
-		InventoryItemValidation{},
+		db.FormInventoryItem{},
+		db.InventoryItemValidation{},
 		productOptions,
-		storageLocationOptions,
+		*storageLocationOptions,
 	).Render(context.Background(), w)
+}
+
+func DeductPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
+	if r.Method == "POST" {
+		r.ParseForm()
+		jsonString := r.PostForm.Get("json_deductions")
+
+		var data []db.DeductionDataItem
+		err := json.Unmarshal([]byte(jsonString), &data)
+		if err != nil || data == nil {
+			return err
+		}
+
+		err = db.DeductInventoryItems(data)
+		if err != nil {
+			return err
+		}
+
+		http.Redirect(w, r, "/app", http.StatusSeeOther)
+		return nil
+	}
+
+	productOptions, err := db.GetProductOptions()
+	if err != nil {
+		return err
+	}
+
+	storageLocationOptions, err := db.GetStorageLocationOptions()
+	if err != nil {
+		return err
+	}
+
+	inventoryItems, err := db.GetInventoryItems()
+	if err != nil {
+		return err
+	}
+
+	type JsonData struct {
+		ProductOptions         []db.Option
+		StorageLocationOptions []db.Option
+		InventoryItems         []db.InventoryItem
+	}
+
+	jsonStr, err := json.Marshal(JsonData{
+		ProductOptions:         productOptions,
+		StorageLocationOptions: *storageLocationOptions,
+		InventoryItems:         *inventoryItems,
+	})
+
+	return deductTemplate(s, DeductTemplateProps{
+		productOptions: productOptions,
+		jsonData:       string(jsonStr),
+	}).Render(context.Background(), w)
 }

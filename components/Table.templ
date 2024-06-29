@@ -1,9 +1,9 @@
 package components
 
 templ Table() {
-    <table class="w-full border-separate border-spacing-0">
-        { children... }
-    </table>
+	<table class="w-full border-separate border-spacing-0">
+		{ children... }
+	</table>
 }
 
 templ Tr() {
@@ -11,14 +11,23 @@ templ Tr() {
 		{ children... }
 	</tr>
 }
+
 templ StickyTr() {
 	<tr class="sticky top-0 z-10 bg-white dark:bg-slate-800">
 		{ children... }
 	</tr>
 }
 
-templ Th() {
-	<th class="border-b dark:border-slate-600 p-3 text-left">
+func thClass(padding bool) string {
+	if padding {
+		return "border-b dark:border-slate-600 p-3 text-left"
+	} else {
+		return "border-b dark:border-slate-600 p-0 text-left"
+	}
+}
+
+templ Th(padding bool) {
+	<th class={ thClass(padding) }>
 		{ children... }
 	</th>
 }

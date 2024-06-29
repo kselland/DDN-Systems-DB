@@ -2,13 +2,13 @@ package db
 
 import (
 	"database/sql"
+	_ "ddn/ddn/dotenv"
 	"fmt"
 	"log"
 	"os"
 	"reflect"
 	"time"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -33,9 +33,9 @@ func getDb() *sql.DB {
 	return DB
 }
 
-var Db *sql.DB
+var db *sql.DB
 
-func GetTable[T any](rows *sql.Rows) (out []T, err error) {
+func getTable[T any](rows *sql.Rows) (out []T, err error) {
 	var table []T
 
 	for rows.Next() {
@@ -77,9 +77,8 @@ func GetTable[T any](rows *sql.Rows) (out []T, err error) {
 	return table, nil
 }
 
-
-func GetFirst[T any](rows *sql.Rows) (out *T, err error) {
-	table, err := GetTable[T](rows)
+func getFirst[T any](rows *sql.Rows) (out *T, err error) {
+	table, err := getTable[T](rows)
 	if err != nil {
 		return nil, err
 	}
@@ -92,17 +91,16 @@ func GetFirst[T any](rows *sql.Rows) (out *T, err error) {
 }
 
 func init() {
-	// TODO: This should not be here, it should be loaded in a more intentional location
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Fatal("Failed to read .env file")
-	}
-
-	Db = getDb()
+	db = getDb()
 
 	// TODO: These settings are mostly arbitrary, find good values
-	Db.SetMaxIdleConns(10)
-	Db.SetMaxOpenConns(10)
-	Db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(10)
+	db.SetConnMaxLifetime(time.Minute * 3)
 }
+
+type Option struct {
+	Value string
+	Text  string
+}
+

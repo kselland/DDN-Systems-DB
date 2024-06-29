@@ -1,30 +1,36 @@
 package components
 
 import "slices"
+import "ddn/ddn/db"
 
-type Option struct {
-	Value string
-	Text  string
+type FuzzySelectProps struct {
+	Name    string
+	Value   string
+	Options []db.Option
+	Form    string
+	Label   string
 }
 
-templ FuzzySelect(name string, value string, options []Option) {
+templ FuzzySelect(p FuzzySelectProps) {
 	<div class="fuzzy-select relative">
+		<p class="mb-2">{ p.Label }</p>
 		<div class="js-mount"></div>
-		<select class="bg-white text-black" name={ name }>
-			for _, option := range options {
-				<option value={ option.Value } selected?={ option.Value == value }>{ option.Text }</option>
+		<select class="bg-white text-black" name={ p.Name }>
+			for _, option := range p.Options {
+				<option value={ option.Value } selected?={ option.Value == p.Value }>{ option.Text }</option>
 			}
 		</select>
 	</div>
 }
 
 type MultiFuzzySelectProps struct {
-    Name string
-	Value []string
-	Options []Option
-	Form string
-	Label string
+	Name    string
+	Value   []string
+	Options []db.Option
+	Form    string
+	Label   string
 }
+
 templ MultiFuzzySelect(p MultiFuzzySelectProps) {
 	<label class="fuzzy-select relative">
 		<p class="mb-2">{ p.Label }</p>

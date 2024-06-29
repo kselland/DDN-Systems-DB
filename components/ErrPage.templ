@@ -4,18 +4,19 @@ import (
 	"ddn/ddn/lib"
 	"fmt"
 	"strconv"
+	"ddn/ddn/appPaths"
 )
 
 templ ErrPage(err lib.RequestError) {
 	@RootLayout(fmt.Sprintf("%d %s | DDN", err.StatusCode, err.Message)) {
-		<main class="mx-auto mt-8 max-w-prose p-6 rounded-md dark:shadow-slate-400 shadow-lg">
+		<main class="mx-auto mt-8 max-w-prose p-6 rounded-md dark:shadow-slate-400 shadow-lg flex flex-col gap-8">
 			<nav class="flex">
-				<a href="/app">Home</a>
+				<a href={ appPaths.Dashboard.WithParams(map[string]string {}) }>Home</a>
 			</nav>
 			<h1 class="flex gap-4 justify-center">
-				<span class="text-4xl">{ strconv.Itoa(err.StatusCode) }</span>
+				<span class="text-4xl self-center">{ strconv.Itoa(err.StatusCode) }</span>
 				<span class="w-0.5 bg-gray-400"></span>
-				<span class="text-4xl">{ err.Message }</span>
+				<span class="text-4xl self-center">{ err.Message }</span>
 			</h1>
 		</main>
 	}

@@ -35,35 +35,3 @@ templ loginPageTemplate(p LoginPageTemplateDetails) {
 	}
 }
 
-type SignupPageTemplateDetails struct {
-	email      string
-	emailTaken bool
-}
-
-templ signupPageTemplate(p SignupPageTemplateDetails) {
-	@components.RootLayout("Login to DDN") {
-		<form method="POST" class="max-w-prose p-4 mx-auto shadow-md dark:shadow-slate-400 rounded-md mt-8 flex flex-col gap-4">
-			<h1 class="text-2xl text-center">Signup</h1>
-			if p.emailTaken {
-				<p class="text-red-500">That email is already taken.</p>
-			}
-			@components.TextInput(components.TextInputProps{
-				Name:       "email",
-				InputType: "email",
-				Required:  true,
-				Label:     "Email",
-				Value:     p.email,
-			})
-			@components.TextInput(components.TextInputProps{
-				Name:       "password",
-				InputType: "password",
-				Required:  true,
-				Label:     "Password",
-				Value:     "",
-			})
-			@components.Button("submit") {
-				Login
-			}
-		</form>
-	}
-}

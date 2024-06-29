@@ -5,3 +5,10 @@ templ Button(buttonType string) {
         { children... }
     </button>
 }
+
+templ AButton(href templ.SafeURL) {
+    <a href={ href } class="bg-blue-400 rounded-md p-2 px-4 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring duration-200">
+        { children... }
+    </a>
+
+}

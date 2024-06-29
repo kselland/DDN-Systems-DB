@@ -1,11 +1,21 @@
-INSERT INTO colors (hex_code, name, product_type)
+INSERT INTO colors (hex_code, name)
 VALUES
-    ('#FFFFFF', 'white', 'cabinet'),
-    ('#EEE1C6', 'n2', 'cabinet'),
-    ('#FFFFFF', 'white', 'accessory'),
-    ('#EEE1C6', 'n2', 'accessory'),
-    ('#A3A19B', 'satin-nickel', 'accessory'),
-    ('#000000', 'black', 'accessory');
+    ('#FFFFFF', 'white'),
+    ('#EEE1C6', 'n2'),
+    ('#A3A19B', 'satin-nickel'),
+    ('#000000', 'black');
+
+INSERT INTO color_product_types (
+    product_type,
+    color_name
+) VALUES
+    ('cabinet', 'white'),
+    ('cabinet', 'n2'),
+    ('accessory', 'white'),
+    ('accessory', 'n2'),
+    ('accessory', 'satin-nickel'),
+    ('accessory', 'black')
+    ;
 
 INSERT INTO products (
     name,
@@ -15,17 +25,16 @@ INSERT INTO products (
     product_type,
     active,
     price_cents,
-    external_id,
-    color_id
+    color_name
 ) VALUES 
-    ('Product 1', 20, 20, 20, 'cabinet', true, 20000, 20, 1),
-    ('Product 2', 21, 22, 23, 'cabinet', true, 12000, 21, 2),
-    ('Product 3', 22, 23, 24, 'cabinet', true, 8000,  22, 1),
-    ('Product 4', 23, 24, 25, 'cabinet', true, 4000,  23, 2),
-    ('Accessory 1', 20, 20, 20, 'accessory', true, 20000, 20, 3),
-    ('Accessory 2', 21, 22, 23, 'accessory', true, 12000, 21, 4),
-    ('Accessory 3', 22, 23, 24, 'accessory', true, 8000,  22, 5),
-    ('Accessory 4', 23, 24, 25, 'accessory', true, 4000,  23, 6);
+    ('Product 1', 20, 20, 20, 'cabinet', true, 20000, 'white'),
+    ('Product 2', 21, 22, 23, 'cabinet', true, 12000, 'n2'),
+    ('Product 3', 22, 23, 24, 'cabinet', true, 8000,  'white'),
+    ('Product 4', 23, 24, 25, 'cabinet', true, 4000,  'n2'),
+    ('Accessory 1', 20, 20, 20, 'accessory', true, 20000, 'white'),
+    ('Accessory 2', 21, 22, 23, 'accessory', true, 12000, 'n2'),
+    ('Accessory 3', 22, 23, 24, 'accessory', true, 8000,  'satin-nickel'),
+    ('Accessory 4', 23, 24, 25, 'accessory', true, 4000,  'black');
 
 INSERT INTO storage_locations (
     bin,

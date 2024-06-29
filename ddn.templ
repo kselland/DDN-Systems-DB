@@ -1,18 +1,35 @@
 package main
 
 import "ddn/ddn/components"
-import "ddn/ddn/session"
+import "ddn/ddn/appPaths"
+import "ddn/ddn/db"
 
-templ homePageTemplate(s *session.Session) {
+templ homePageTemplate(s *db.Session) {
 	@components.RootLayout("Home | DDN") {
-		<article class="flex flex-col max-w-prose mt-8 mx-auto gap-4">
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/products">Products</a>
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/storage-locations">Storage Locations</a>
-			<a class="p-4 rounded-md shadow-md dark:shadow-slate-400" href="/app/inventory">Inventory</a>
-			<form method="POST" action="/logout" class="contents">
-				@components.CSRF(s.Csrf_Token)
-				<button class="p-4 rounded-md shadow-md dark:shadow-slate-400 text-left">Logout</button>
-			</form>
-		</article>
+		<nav class="flex">
+			<ul class="contents">
+				<li class="contents"><a class="p-4" href={ appPaths.ProductListing.WithNoParams() }>Products</a></li>
+				<li class="contents"><a class="p-4" href={ appPaths.StorageLocationListing.WithNoParams() }>Storage Locations</a></li>
+				<li class="contents"><a class="p-4" href={ appPaths.Inventory.WithNoParams() }>Inventory</a></li>
+				<li class="contents"><a class="p-4" href={ appPaths.UserListing.WithNoParams() }>Users</a></li>
+				<li class="contents"><a class="p-4" href={ appPaths.InventoryDeduct.WithNoParams() }>Deduct Inventory</a></li>
+				<li class="contents">
+					<form method="POST" action={ appPaths.Logout.WithNoParams() } class="contents">
+						@components.CSRF(s.Csrf_Token)
+						<button class="p-4 ml-auto">Logout</button>
+					</form>
+				</li>
+				<li class="contents">
+					<div class="p-4">
+						{ s.User.Email } { string(s.User.Role) }
+					</div>
+				</li>
+				<li class="contents">
+					<div class="p-4">
+						{ s.User.Email } { string(s.User.Role) }
+					</div>
+				</li>
+			</ul>
+		</nav>
 	}
 }

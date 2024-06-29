@@ -7,6 +7,7 @@ type TextInputProps struct {
 	Label     string
 	Value     string
 	Form      string
+    Placeholder string
 }
 
 templ TextInput(p TextInputProps) {
@@ -17,8 +18,11 @@ templ TextInput(p TextInputProps) {
 			name={ p.Name }
 			type={ p.InputType }
 			required?={ p.Required }
-            form={ p.Form }
+			if p.Form != "" {
+				form={ p.Form }
+			}
 			class="duration-200 px-4 p-2 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring dark:border-slate-600 border grow block bg-transparent rounded-md w-full"
+            placeholder={ p.Placeholder }
 		/>
 	</label>
 }

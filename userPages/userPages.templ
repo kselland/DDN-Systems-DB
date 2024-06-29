@@ -1,0 +1,134 @@
+package userPages
+
+import "ddn/ddn/components"
+import "ddn/ddn/appPaths"
+import "ddn/ddn/db"
+import "fmt"
+
+templ indexTemplate(s *db.Session, users []db.User) {
+	@components.RootLayout("Users | DDN") {
+		<h1 class="p-4 bg-blue-400 mb-4">
+			<a href={ appPaths.Dashboard.WithNoParams() }>&#8592;</a>
+			Users
+		</h1>
+		@components.Table() {
+			<thead>
+				@components.StickyTr() {
+					@components.Th(true) {
+						Name
+					}
+					@components.Th(true) {
+						Email
+					}
+					@components.Th(true) {
+						Role
+					}
+					@components.Th(false) {
+						<div class="flex w-full">
+							<a
+								class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3"
+								href={ appPaths.UserNew.WithNoParams() }
+							>
+								<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
+							</a>
+						</div>
+					}
+				}
+			</thead>
+			<tbody>
+				for _, user := range users {
+					@components.Tr() {
+						@components.Td(true) {
+							{ user.Name }
+						}
+						@components.Td(true) {
+							{ user.Email }
+						}
+						@components.Td(true) {
+							{ string(user.Role) }
+						}
+						@components.Td(false) {
+							<div class="flex">
+								<form
+									class="ml-auto"
+									action={ appPaths.UserDelete.WithParams(map[string]string{"id": fmt.Sprint(user.Id)}) }
+									method="POST"
+								>
+									@components.CSRF(s.Csrf_Token)
+									<button
+										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+										aria-label={ "Delete user: " + user.Email }
+									>
+										<span class="w-4 h-4 icon-[heroicons-outline--trash]"></span>
+									</button>
+								</form>
+								<a
+									class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+									href={ appPaths.User.WithParams(map[string]string{"id": fmt.Sprint(user.Id)}) }
+									aria-label={ "View and edit user: " + user.Email }
+								>
+									<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
+								</a>
+							</div>
+						}
+					}
+				}
+			</tbody>
+		}
+	}
+}
+
+templ editTemplate() {
+	@components.RootLayout("Users | DDN") {
+		// TODO: Implement this page
+		This page hasn't yet been implemented. Please check back later.
+	}
+}
+
+type NewTemplateDetails struct {
+	email      string
+	emailTaken bool
+	roles      []db.Option
+	name       string
+}
+
+templ newTemplate(s *db.Session, p NewTemplateDetails) {
+	@components.RootLayout("Login to DDN") {
+		<form method="POST" class="max-w-prose p-4 mx-auto shadow-md dark:shadow-slate-400 rounded-md mt-8 flex flex-col gap-4">
+			@components.CSRF(s.Csrf_Token)
+			<h1 class="text-2xl text-center">Create User</h1>
+			if p.emailTaken {
+				<p class="text-red-500">That email is already taken.</p>
+			}
+			@components.TextInput(components.TextInputProps{
+				Name:      "name",
+				InputType: "text",
+				Required:  true,
+				Label:     "Name",
+				Value:     p.name,
+			})
+			@components.TextInput(components.TextInputProps{
+				Name:      "email",
+				InputType: "email",
+				Required:  true,
+				Label:     "Email",
+				Value:     p.email,
+			})
+			@components.TextInput(components.TextInputProps{
+				Name:      "password",
+				InputType: "password",
+				Required:  true,
+				Label:     "Password",
+				Value:     "",
+			})
+			@components.FuzzySelect(components.FuzzySelectProps{
+				Name:    "role",
+				Value:   "",
+				Options: p.roles,
+			})
+			@components.Button("submit") {
+				Login
+			}
+		</form>
+	}
+}

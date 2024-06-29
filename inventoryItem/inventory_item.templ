@@ -3,36 +3,21 @@ package inventoryItem
 import "ddn/ddn/components"
 import "fmt"
 import "strconv"
-import "ddn/ddn/session"
+import "ddn/ddn/appPaths"
+import "ddn/ddn/db"
 
-templ newTemplate(s *session.Session, item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
+templ newTemplate(s *db.Session, item db.FormInventoryItem, v db.InventoryItemValidation, productOptions []db.Option, storageLocationOptions []db.Option) {
 	@components.RootLayout("Add inventory | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4"><a href="/inventory">&#8592;</a> Add inventory</h1>
+		<h1 class="p-4 bg-blue-400 dark:bg-blue-800 mb-4"><a href={ appPaths.Inventory.WithParams(map[string]string{}) }>&#8592;</a> Add inventory</h1>
 		@EditableInventoryItemComponent(s, item, v, productOptions, storageLocationOptions)
 	}
 }
 
-templ viewTemplate(s *session.Session, item FormInventoryItem, v InventoryItemValidation, productOptions []components.Option, storageLocationOptions []components.Option) {
+templ viewTemplate(s *db.Session, item db.FormInventoryItem, v db.InventoryItemValidation, productOptions []db.Option, storageLocationOptions []db.Option) {
 	@components.RootLayout(fmt.Sprintf("Inventory at %s | DDN", item.Storage_Location_Id)) {
-		<div class="p-4 bg-blue-400"><a href="/inventory">&#8592;</a> Editing inventory</div>
+		<div class="p-4 bg-blue-400 dark:bg-blue-800 flex items-center"><a href={ appPaths.Inventory.WithParams(map[string]string{}) } class="icon-[heroicons-outline--arrow-left]"></a>&nbsp; Editing inventory</div>
 		@EditableInventoryItemComponent(s, item, v, productOptions, storageLocationOptions)
 	}
-}
-
-func getInventoryItemUrl(item InventoryItem) templ.SafeURL {
-	return templ.URL("/app/inventory-item/" + strconv.Itoa(item.Id))
-}
-
-func deleteInventoryItemUrl(item InventoryItem) templ.SafeURL {
-	return templ.URL("/app/inventory-item/" + strconv.Itoa(item.Id) + "/delete")
-}
-
-func getProductUrl(id int) templ.SafeURL {
-	return templ.URL("/app/product/" + strconv.Itoa(id))
-}
-
-func getStorageLocationId(id int) templ.SafeURL {
-	return templ.URL("/app/storage-location/" + strconv.Itoa(id))
 }
 
 func getPaginationClass(disabled bool) string {
@@ -45,10 +30,11 @@ func getPaginationClass(disabled bool) string {
 }
 
 type IndexTemplateProps struct {
-	storageLocationOptions []components.Option
-	productIdOptions       []components.Option
-	filter                 Filter
-	filteredItems          []DisplayableInventoryItem
+	storageLocationOptions []db.Option
+	productIdOptions       []db.Option
+	batchNumberOptions     []db.Option
+	filter                 db.InventoryItemsFilter
+	filteredItems          []db.DisplayableInventoryItem
 	pagination             []PaginationItem
 	perPage                int
 	page                   int
@@ -68,10 +54,10 @@ type PaginationItem struct {
 	to             int
 }
 
-templ indexTemplate(s *session.Session, props IndexTemplateProps) {
+templ indexTemplate(s *db.Session, props IndexTemplateProps) {
 	@components.RootLayout("Inventory | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800">
-			<a href="/">&#8592;</a>
+		<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800 items-center">
+			<a href={ appPaths.Dashboard.WithParams(map[string]string{}) } class="icon-[heroicons-outline--arrow-left]"></a>&nbsp;
 			Inventory
 		</h1>
 		<main class="mx-auto p-4">
@@ -88,7 +74,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								id="filter-inventory-form"
 								class="font-normal mx-auto rounded-xl flex relative mb-4 items-stretch pt-4"
 							>
-								<input oninput="this.form.requestSubmit()" value={ props.filter.search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
+								<input oninput="this.form.requestSubmit()" value={ props.filter.Search } name="search" class="p-4 outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600 border border-r-0 grow block bg-transparent rounded-l-xl"/>
 								<button class="p-4 border flex items-center justify-center rounded-r-xl outline-none focus:bg-gray-200 dark:focus:bg-slate-600 dark:border-slate-600">
 									<span class="h-8 w-8 icon-[heroicons-outline--search]"></span>
 								</button>
@@ -98,10 +84,10 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 					@components.Tr() {
 						<th class="border-b dark:border-slate-600 p-3 text-left">
 							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
-								Label:   "Storage Locations",
-								Name:    "storageLocations",
-								Value:   props.filter.storageLocations,
-								Options: props.storageLocationOptions,
+								Label:   "Product",
+								Name:    "productIds",
+								Value:   props.filter.ProductIds,
+								Options: props.productIdOptions,
 								Form:    "filter-inventory-form",
 							})
 						</th>
@@ -111,42 +97,53 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								InputType: "number",
 								Required:  false,
 								Label:     "Min quantity",
-								Value:     strconv.Itoa(props.filter.minQuantity),
+								Value:     strconv.Itoa(props.filter.MinQuantity),
 								Form:      "filter-inventory-form",
 							})
 						</th>
 						<th class="border-b dark:border-slate-600 p-3 text-left">
-							<!--TODO: What to put here -->
-						</th>
-						<th class="border-b dark:border-slate-600 p-3 text-left">
 							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
-								Label:   "Product Id",
-								Name:    "productIds",
-								Value:   props.filter.productIds,
-								Options: props.productIdOptions,
+								Label:   "Batch Numbers",
+								Name:    "batchNumbers",
+								Value:   props.filter.BatchNumbers,
+								Options: props.batchNumberOptions,
 								Form:    "filter-inventory-form",
 							})
 						</th>
-						<th class="border-b dark:border-slate-600 text-left p-0">
-							<div class="flex w-full">
-								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/app/inventory/new">
-									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
-								</a>
-							</div>
+						<th class="border-b dark:border-slate-600 p-3 text-left">
+							@components.MultiFuzzySelect(components.MultiFuzzySelectProps{
+								Label:   "Storage Locations",
+								Name:    "storageLocations",
+								Value:   props.filter.StorageLocations,
+								Options: props.storageLocationOptions,
+								Form:    "filter-inventory-form",
+							})
 						</th>
+						<th class="border-b dark:border-slate-600 text-left p-0"></th>
 					}
 					@components.StickyTr() {
-						<th class="border-b dark:border-slate-600 p-3 text-left">Bin</th>
-						<th class="border-b dark:border-slate-600 p-3 text-left">In stock</th>
-						<th class="border-b dark:border-slate-600 p-3 text-left">Batch Number</th>
-						<th class="border-b dark:border-slate-600 p-3 text-left">Product</th>
-						<th class="border-b dark:border-slate-600 text-left p-0">
+						@components.Th(true) {
+							Product
+						}
+						@components.Th(true) {
+							Qty
+						}
+						@components.Th(true) {
+							Batch Number
+						}
+						@components.Th(true) {
+							Bin
+						}
+						@components.Th(false) {
 							<div class="flex w-full">
-								<a class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3" href="/app/inventory/new">
+								<a
+									class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3"
+									href={ appPaths.InventoryItemNew.WithNoParams() }
+								>
 									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
 								</a>
 							</div>
-						</th>
+						}
 					}
 				</thead>
 				<tbody id="tbody">
@@ -156,8 +153,8 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 					for _, item := range props.filteredItems {
 						<tr>
 							@components.Td(true) {
-								<a class="text-blue-400" href={ getStorageLocationId(item.Storage_Location_Id) }>
-									{ item.Storage_Location_Bin }
+								<a class="text-blue-400 outline-none focus:underline" href={ appPaths.Product.WithParams(map[string]string{"id": fmt.Sprint(item.Product_Id)}) }>
+									{ item.Product_Name }
 								</a>
 							}
 							@components.Td(true) {
@@ -167,8 +164,8 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 								{ strconv.Itoa(item.Batch_Number) }
 							}
 							@components.Td(true) {
-								<a class="text-blue-400 outline-none focus:underline" href={ getProductUrl(item.Product_Id) }>
-									{ item.Product_Name }
+								<a class="text-blue-400" href={ appPaths.StorageLocation.WithParams(map[string]string{"id": fmt.Sprint(item.Storage_Location_Id)}) }>
+									{ item.Storage_Location_Bin }
 								</a>
 							}
 							@components.Td(false) {
@@ -184,7 +181,7 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 									</form>
 									<a
 										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
-										href={ templ.URL(fmt.Sprintf("/app/inventory-item/%d", item.Id)) }
+										href={ appPaths.InventoryItem.WithParams(map[string]string{"id": fmt.Sprint(item.Id)}) }
 										aria-label={ "View and edit inventory at " + item.Storage_Location_Bin }
 									>
 										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
@@ -260,16 +257,17 @@ templ indexTemplate(s *session.Session, props IndexTemplateProps) {
 }
 
 templ EditableInventoryItemComponent(
-	s *session.Session,
-	item FormInventoryItem,
-	v InventoryItemValidation,
-	productOptions []components.Option,
-	storageLocationOptions []components.Option,
+	s *db.Session,
+	item db.FormInventoryItem,
+	v db.InventoryItemValidation,
+	productOptions []db.Option,
+	storageLocationOptions []db.Option,
 ) {
-	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md dark:shadow-slate-400" method="POST">
 		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
+			<p>{ v.Batch_Number } { v.Storage_Location_Id } { v.Product_Id } { v.Quantity }</p>
 		}
 		<div class="relative">
 			<div class="flex flex-col">
@@ -281,26 +279,31 @@ templ EditableInventoryItemComponent(
 					<p class="py-1">Batch Number:</p>
 					@components.SizeField("batch_number", item.Batch_Number, "___", "number")
 				</label>
-				@components.FuzzySelect("product_id", item.Product_Id, productOptions)
-				@components.FuzzySelect("storage_location_id", item.Storage_Location_Id, storageLocationOptions)
+				@components.FuzzySelect(components.FuzzySelectProps{Name: "product_id", Value: item.Product_Id, Options: productOptions})
+				@components.FuzzySelect(components.FuzzySelectProps{Name: "storage_location_id", Value: item.Storage_Location_Id, Options: storageLocationOptions})
 			</div>
 			<div class="flex gap-4 justify-end">
-				<!-- TODO: if they mess up the submission but add a storage location, then it would allow them to click. Don't even know if that's desirable, but just a not if nothing else -->
+				<!-- TODO: if they mess up the submission but add a storage location, then it would allow them to click. Don't even know if that's desirable, but just a note if nothing else -->
 				if item.Storage_Location_Id != "" {
 					<!-- TODO: Show the storage location bin not id -->
-					<a class="text-blue-400" href={ templ.URL(fmt.Sprintf("/storage-location/%s", item.Storage_Location_Id)) }>Go to bin { item.Storage_Location_Id }</a>
+					<a class="text-blue-400" href={ appPaths.StorageLocation.WithParams(map[string]string{"id": string(item.Storage_Location_Id)}) }>Go to bin { item.Storage_Location_Id }</a>
 				}
 				<!-- TODO: if they mess up the submission but add a product, then it would allow them to click. Don't even know if that's desirable, but just a not if nothing else -->
 				if item.Product_Id != "" {
 					<!-- TODO: Show the product name -->
-					<a class="text-blue-400" href={ templ.URL(fmt.Sprintf("/product/%s", item.Product_Id)) }>Go to product { item.Product_Id }</a>
+					<a
+						class="text-blue-400"
+						href={ appPaths.Product.WithParams(map[string]string{"id": string(item.Product_Id)}) }
+					>
+						Go to product { item.Product_Id }
+					</a>
 				}
 			</div>
 			<div class="absolute top-4 right-4 flex gap-4">
 				<div class="update-data-actions flex flex-row-reverse">
 					<button class="submit-button text-4xl">&check;</button>
 					if item.Id == nil {
-						<a href="/app/inventory" class="cancel-button text-4xl">&times;</a>
+						<a href={ appPaths.Inventory.WithParams(map[string]string{}) } class="cancel-button text-4xl">&times;</a>
 					} else {
 						<button type="reset" class="cancel-button text-4xl">&times;</button>
 					}
@@ -318,4 +321,18 @@ templ EditableInventoryItemComponent(
 		}
 		document.addEventListener("input", showSubmitButton);
 	</script>
+}
+
+type DeductTemplateProps struct {
+	productOptions []db.Option
+	jsonData string
+}
+
+templ deductTemplate(s *db.Session, p DeductTemplateProps) {
+	@components.RootLayout("Inventory Deduction | DDN") {
+		<div class="inventory-deduction-interface">
+			<div class="json-data hidden">{ p.jsonData }</div>
+			<div class="csrf-token hidden">{ s.Csrf_Token }</div>
+		</div>
+	}
 }
