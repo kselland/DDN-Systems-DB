@@ -7,6 +7,7 @@ import (
 	"ddn/ddn/auth"
 	"ddn/ddn/components"
 	"ddn/ddn/db"
+	_ "ddn/ddn/dotenv"
 	"ddn/ddn/inventoryItem"
 	"ddn/ddn/lib"
 	"ddn/ddn/middleware"
@@ -20,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -100,6 +102,12 @@ func registerRoute(r *mux.Router, appPath appPaths.AppPath, methods []string, ha
 }
 
 func startServer() {
+	portStr := os.Getenv("PORT")
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		panic("Invalid PORT variable")
+	}
+
 	r := mux.NewRouter()
 
 	registerRoute(r, appPaths.Dashboard, []string{"GET"}, homePage)
@@ -133,8 +141,8 @@ func startServer() {
 	http.Handle("/static/", http.FileServer(http.FS(static)))
 	http.Handle("/", middleware.NewAuthMiddleware(middleware.NewCSRFMiddleware(r)))
 
-	fmt.Println("Listening on port 3001")
-	err := http.ListenAndServe(":3001", nil)
+	fmt.Printf("Listening on port %d\n", port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Println("server closed")
@@ -173,11 +181,11 @@ func initScript() {
 		log.Fatal("Failed to get password digest")
 	}
 
-	err = db.InsertUser(db.User {
-		Name: name,
-		Email: email,
+	err = db.InsertUser(db.User{
+		Name:            name,
+		Email:           email,
 		Password_digest: passwordDigest,
-		Role: db.UserRoleSuperAdmin,
+		Role:            db.UserRoleSuperAdmin,
 	})
 	if err != nil {
 		fmt.Println(err)

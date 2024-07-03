@@ -1,5 +1,5 @@
 {
-  description = "A minimal Go project flake";
+  description = "The ddn app";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11"; # Adjust the channel as necessary
@@ -23,8 +23,8 @@
             typescript
             nodePackages_latest.typescript-language-server
             air
-            flyctl
             tailwindcss-language-server
+            nil
             # Add any other dependencies here
           ];
 
@@ -33,6 +33,36 @@
             export GOPATH=$PWD/.gopath
             export PATH=$GOPATH/bin:$PATH
           '';
+        };
+        defaultPackage = pkgs.stdenv.mkDerivation {
+          pname = "ddn-app";
+          version = "1.0.0";
+
+          src = ./.;
+
+          buildInputs = with pkgs; [
+            go
+            (templ system)
+          ];
+
+          buildPhase = ''
+            export GOPATH=$PWD/.gopath
+            export PATH=$GOPATH/bin:$PATH
+            export GOCACHE=$(mktemp -d)
+            mkdir -p $out/bin
+            templ generate
+            pwd
+            go build -o $out/bin/ddn-app .
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp -r ./static $out/static
+          '';
+        };
+        apps.default = {
+          type = "app";
+          program = "${self.defaultPackage.${system}}/bin/ddn-app";
         };
       }
     );

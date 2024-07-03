@@ -332,9 +332,10 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                 <table class="w-full">
                     <tbody>
                         <${For} each=${selectedInventoryItemIds}>
-                            ${(item) => html`
+                            ${(item: {id: number, quantity: number}) => html`
                                 <tr>
                                     <td class="p-2">${p.storageLocationOptions.find(s => +s.value === p.inventoryItems.find(i => i.Id === item.id)!.Storage_Location_Id)!.text}</td>
+                                    <td class="p-2">${p.productOptions.find(product => +product.value === p.inventoryItems.find(s => s.Id == item.id)!.Product_Id)!.text}</td>
                                     <td class="p-2">${item.quantity} of ${p.inventoryItems.find(s => s.Id == item.id)!.Quantity}</td>
                                 </tr>
                             `}
@@ -389,7 +390,11 @@ const InventorySelector = (p: {
     }
 
     const together = createMemo(() => {
-        return p.inventoryItems.map(i => ({ ...i, Bin: p.storageLocationOptions.find(s => +s.value === i.Id)!.text }))
+        console.log(p)
+        return p.inventoryItems.map(i => ({
+            ...i,
+            Bin: p.storageLocationOptions.find(s => +s.value === i.Storage_Location_Id)!.text
+        }));
     });
 
     const filtered = createMemo(() => {
@@ -459,16 +464,15 @@ const InventorySelector = (p: {
             />
         <//>
 
-        <div class="flex-grow flex flex-wrap h-72 overflow-scroll shadow-inner shadow-white p-4 rounded-md gap-4">
+        <div class="flex-grow flex flex-wrap h-72 overflow-scroll shadow-inner shadow-white p-4 rounded-md gap-4 items-center">
             <${For} each=${() => filtered()}>
                 ${(item: InventoryItem & { Bin: string }) => {
                     const selected = createMemo(() => {
                         return selectedInventoryItems().includes(item.Id);
                     })
 
-                    const className = () => selected()
-                        ? 'focus-within:outline-gray-400 outline outline-transparent relative p-4 rounded-md border border-gray-600 duration-200 bg-gray-400'
-                        : 'focus-within:outline-gray-400 outline outline-transparent relative p-4 rounded-md border border-gray-600 duration-200';
+                    const className = () => 
+                        `focus-within:outline-gray-400 outline outline-transparent relative p-4 rounded-md border border-gray-600 duration-200 ${selected() ? 'bg-gray-400' : ''}`
 
                     return html`
                         <label class=${className}>
