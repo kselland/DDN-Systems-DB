@@ -329,10 +329,16 @@ type DeductTemplateProps struct {
 }
 
 templ deductTemplate(s *db.Session, p DeductTemplateProps) {
-	@components.RootLayout("Inventory Deduction | DDN") {
-		<div class="inventory-deduction-interface">
-			<div class="json-data hidden">{ p.jsonData }</div>
-			<div class="csrf-token hidden">{ s.Csrf_Token }</div>
+	@components.RootLayout("Deduct Inventory | DDN") {
+		<div class="flex flex-col min-h-screen">
+			<h1 class="p-4 bg-blue-400 mb-4 flex dark:bg-blue-800 items-center">
+				<a href={ appPaths.Dashboard.WithParams(map[string]string{}) } class="icon-[heroicons-outline--arrow-left]"></a>&nbsp;
+				Deduct Inventory
+			</h1>
+			<div class="inventory-deduction-interface flex-grow flex flex-col">
+				<div class="json-data hidden">{ p.jsonData }</div>
+				<div class="csrf-token hidden">{ s.Csrf_Token }</div>
+			</div>
 		</div>
 	}
 }

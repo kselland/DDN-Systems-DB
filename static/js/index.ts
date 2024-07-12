@@ -307,7 +307,7 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
     });
 
     return html`
-		<div class="flex min-h-screen">
+		<div class="flex flex-grow">
             <${InventorySelector}
                 storageLocationOptionsMap=${storageLocationOptionsMap}
                 productOptionsMap=${productOptionsMap}
@@ -440,7 +440,6 @@ const InventorySelector = (p: {
             p.onSelect(prevData);
         }}
         >
-        <h1 class="text-4xl">Deduct Inventory<//>
         <${TextInputControl}
             label="Quantity"
             value=${quantityStr}
