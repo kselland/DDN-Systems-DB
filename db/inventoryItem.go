@@ -84,7 +84,7 @@ type CountStruct struct {
 func CountFilteredInventoryItems(filter InventoryItemsFilter) (*int, error) {
 	query, err := db.Query(`
 		SELECT 
-			COUNT(*) as count
+			COUNT(*) AS count
 		FROM
 			inventory_items i
 		LEFT JOIN
@@ -131,10 +131,10 @@ func GetFilteredDisplayableInventoryItems(filter InventoryItemsFilter, perPage i
 		SELECT 
 			i.id,
 			i.product_id,
-			p.name product_name,
+			p.name AS product_name,
 			i.quantity,
 			i.batch_number,
-			s.bin storage_location_bin,
+			s.bin AS storage_location_bin,
 			i.storage_location_id
 		FROM
 			inventory_items i
@@ -184,7 +184,13 @@ func GetFilteredDisplayableInventoryItems(filter InventoryItemsFilter, perPage i
 }
 
 func GetBatchNumberOptions() ([]Option, error) {
-	query, err := db.Query(`SELECT DISTINCT batch_number value, batch_number text FROM inventory_items`)
+	query, err := db.Query(`
+		SELECT DISTINCT
+			batch_number AS value,
+			batch_number AS text
+		FROM
+			inventory_items
+	`)
 	if err != nil {
 		return nil, err
 	}

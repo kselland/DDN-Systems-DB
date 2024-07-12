@@ -59,8 +59,8 @@ type FormProduct struct {
 func GetProductOptions() ([]Option, error) {
 	query, err := db.Query(`
 		SELECT
-			id value,
-			name text
+			id AS value,
+			name AS text
 		FROM
 			products
 	`)
@@ -96,7 +96,7 @@ func GetDisplayableProducts() (*[]DisplayableProduct, error) {
 			p.active,
 			p.price_cents,
 			p.color_name,
-			c.hex_code color_hex_code
+			c.hex_code AS color_hex_code
 		FROM
 			products p
 		LEFT JOIN

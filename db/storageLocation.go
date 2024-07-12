@@ -22,7 +22,13 @@ type FormStorageLocation struct {
 }
 
 func GetStorageLocationOptions() (*[]Option, error) {
-	query, err := db.Query(`SELECT id value, bin text FROM storage_locations`)
+	query, err := db.Query(`
+		SELECT
+			id AS value,
+			bin AS text
+		FROM
+			storage_locations
+	`)
 	if err != nil {
 		return nil, err
 	}
