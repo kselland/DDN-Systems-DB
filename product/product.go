@@ -226,7 +226,7 @@ func ViewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, string(appPaths.Product.WithParams(map[string]string{"id": fmt.Sprint(id)})), http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.Product.WithParams(map[string]string{"id": fmt.Sprint(id)}), http.StatusSeeOther)
 		return nil
 	}
 
@@ -249,7 +249,7 @@ func DeletePage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	http.Redirect(w, r, "/products", http.StatusSeeOther)
+	appPaths.Redirect(w, r, appPaths.ProductListing.WithNoParams(), http.StatusSeeOther)
 	return nil
 }
 
@@ -287,7 +287,7 @@ func NewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, "/products", http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.ProductListing.WithNoParams(), http.StatusSeeOther)
 
 		return nil
 	}

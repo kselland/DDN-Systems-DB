@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"ddn/ddn/appPaths"
 	"ddn/ddn/lib"
 	"ddn/ddn/session"
 	"fmt"
@@ -31,7 +32,7 @@ func (mw AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					MaxAge: 2000,
 				})
 			}
-			http.Redirect(w, r, "/login", 303)
+			appPaths.Redirect(w, r, appPaths.Login.WithNoParams(), 303)
 			return
 		}
 		session.CreateSession(r, w, s.User.Id)

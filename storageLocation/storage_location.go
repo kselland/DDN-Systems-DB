@@ -2,9 +2,9 @@ package storageLocation
 
 import (
 	"context"
+	"ddn/ddn/appPaths"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -81,7 +81,12 @@ func ViewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/storage-location/%d", id), http.StatusSeeOther)
+		appPaths.Redirect(
+			w,
+			r,
+			appPaths.StorageLocation.WithParams(map[string]string{"id": strconv.Itoa(id)}), 
+			http.StatusSeeOther,
+		)
 		return nil
 	}
 
@@ -118,7 +123,7 @@ func DeletePage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	http.Redirect(w, r, "/storage-locations", http.StatusSeeOther)
+	appPaths.Redirect(w, r, appPaths.StorageLocationListing.WithNoParams(), http.StatusSeeOther)
 	return nil
 }
 
@@ -151,7 +156,7 @@ func NewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, "/storage-locations", http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.StorageLocationListing.WithNoParams(), http.StatusSeeOther)
 
 		return nil
 	}

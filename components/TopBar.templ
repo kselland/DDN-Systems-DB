@@ -1,0 +1,13 @@
+package components
+
+type TopBarParams struct {
+    BackUrl templ.SafeURL;
+}
+
+templ TopBar(p TopBarParams) {
+	<h1 class="p-4 bg-blue-400 dark:bg-blue-800 mb-4">
+		<a href={ p.BackUrl } class="icon-[heroicons-outline--arrow-left]"></a>
+        &nbsp;
+		{ children... }
+	</h1>
+}

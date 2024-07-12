@@ -52,7 +52,7 @@ func NewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			return err
 		}
-		http.Redirect(w, r, string(appPaths.UserListing.WithNoParams()), 303)
+		appPaths.Redirect(w, r, appPaths.UserListing.WithNoParams(), 303)
 		return nil
 	}
 

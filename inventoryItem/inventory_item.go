@@ -2,10 +2,10 @@ package inventoryItem
 
 import (
 	"context"
+	"ddn/ddn/appPaths"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +20,7 @@ type EditableInventoryItemProps struct {
 	Id                *int
 }
 
-func getPagination(numPages int, perPage int, page int) []PaginationItem {
+func getPagination(numPages int, page int) []PaginationItem {
 	var pagination []PaginationItem
 
 	if page != 1 {
@@ -136,7 +136,7 @@ func IndexPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			productIdOptions:       productIdOptions,
 			batchNumberOptions:     batchNumberOptions,
 			filteredItems:          *inventoryItems,
-			pagination:             getPagination(numPages, perPage, page),
+			pagination:             getPagination(numPages, page),
 			perPage:                perPage,
 			page:                   page,
 		},
@@ -206,7 +206,7 @@ func ViewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("/app/inventory-item/%d", id), http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.InventoryItem.WithParams(map[string]string{"id": string(id)}), http.StatusSeeOther)
 		return nil
 	}
 
@@ -238,7 +238,7 @@ func DeletePage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 
 	db.DeleteInventoryItem(id)
 
-	http.Redirect(w, r, "/app/inventory", http.StatusSeeOther)
+	appPaths.Redirect(w, r, appPaths.Inventory.WithNoParams(), http.StatusSeeOther)
 	return nil
 }
 
@@ -278,7 +278,7 @@ func NewPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			).Render(context.Background(), w)
 		}
 
-		http.Redirect(w, r, "/app/inventory", http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.Inventory.WithNoParams(), http.StatusSeeOther)
 
 		return nil
 	}
@@ -308,7 +308,7 @@ func DeductPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 
-		http.Redirect(w, r, "/app", http.StatusSeeOther)
+		appPaths.Redirect(w, r, appPaths.Dashboard.WithNoParams(), http.StatusSeeOther)
 		return nil
 	}
 

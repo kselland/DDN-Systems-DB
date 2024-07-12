@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"context"
+	"ddn/ddn/appPaths"
 	"ddn/ddn/db"
 	"ddn/ddn/lib"
 	"ddn/ddn/session"
@@ -36,7 +37,7 @@ func LoginPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 
 		var gotoRoute string
 		if err != nil || gotoRouteCookie.Value == "" {
-			gotoRoute = "/app"
+			gotoRoute = string(appPaths.Dashboard.WithNoParams())
 		} else {
 			gotoRoute = gotoRouteCookie.Value
 		}
@@ -50,7 +51,7 @@ func LoginPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 
 func LogoutPage(s *db.Session, w http.ResponseWriter, r *http.Request) error {
 	session.EndSession(w)
-	http.Redirect(w, r, "/login", 303)
+	appPaths.Redirect(w, r, appPaths.Login.WithNoParams(), 303)
 	return nil
 }
 

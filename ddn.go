@@ -87,7 +87,7 @@ func fourOhFour(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexRedirect(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/app", 308)
+	appPaths.Redirect(w, r, appPaths.Dashboard.WithNoParams(), 308)
 }
 
 //go:embed static

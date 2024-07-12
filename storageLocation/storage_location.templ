@@ -8,7 +8,7 @@ import "ddn/ddn/db"
 
 templ newTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout("Create storage location | DDN") {
-		@components.TopBar(components.TopBarParams {BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
 			New Storage Location
 		}
 		@EditableStorageLocationComponent(s, fsl, v, colors)
@@ -17,7 +17,7 @@ templ newTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocatio
 
 templ viewTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout(fmt.Sprintf("Storage Location: %s | DDN", fsl.Bin)) {
-		@components.TopBar(components.TopBarParams {BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
 			Editing Storage Location
 		}
 		@EditableStorageLocationComponent(s, fsl, v, colors)
@@ -26,7 +26,7 @@ templ viewTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocati
 
 templ indexTemplate(s *db.Session, storageLocations []db.StorageLocation) {
 	@components.RootLayout("Storage Locations | DDN") {
-		@components.TopBar(components.TopBarParams {BackUrl: appPaths.Dashboard.WithNoParams()}) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.Dashboard.WithNoParams()}) {
 			StorageLocations
 		}
 		<main class="p-4">
@@ -95,22 +95,43 @@ templ EditableStorageLocationComponent(s *db.Session, fsl db.FormStorageLocation
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>
 		}
 		<div class="relative">
-			<div class="flex">
-				@components.SizeField("bin", fsl.Bin, "Bin", "text")
-			</div>
-			<div class="flex items-end">
-				<div class="flex">
-					@components.SizeField("width", fsl.Width, "W", "number")
-					<span class="font-mono italic text-gray-600 p-1">&times;</span>
-					@components.SizeField("length", fsl.Length, "L", "number")
-					<span class="font-mono italic text-gray-600 p-1">&times;</span>
-					@components.SizeField("height", fsl.Height, "H", "number")
-				</div>
+			<div class="flex flex-col gap-4">
+				@components.TextInput(components.TextInputProps{
+					Name:      "bin",
+					InputType: "text",
+					Required:  true,
+					Label:     "Bin",
+					Value:     fsl.Bin,
+				})
+				@components.TextInput(components.TextInputProps{
+					Name:      "width",
+					InputType: "number",
+					Required:  true,
+					Label:     "Width",
+					Value:     fsl.Width,
+				})
+				@components.TextInput(components.TextInputProps{
+					Name:      "length",
+					InputType: "number",
+					Required:  true,
+					Label:     "Length",
+					Value:     fsl.Length,
+				})
+				@components.TextInput(components.TextInputProps{
+					Name:      "height",
+					InputType: "number",
+					Required:  true,
+					Label:     "Height",
+					Value:     fsl.Height,
+				})
+				@components.Button("submit") {
+					Submit
+				}
 				<div class="absolute top-4 right-4 flex gap-4">
 					<div class="update-data-actions flex flex-row-reverse">
 						<button class="submit-button text-4xl">&check;</button>
 						if fsl.Id == nil {
-							<a href={ appPaths.StorageLocationListing.WithParams(map[string]string {}) } class="cancel-button text-4xl">&times;</a>
+							<a href={ appPaths.StorageLocationListing.WithParams(map[string]string{}) } class="cancel-button text-4xl">&times;</a>
 						} else {
 							<button type="reset" class="cancel-button text-4xl">&times;</button>
 						}

@@ -2,6 +2,7 @@ package appPaths
 
 import (
 	"ddn/ddn/db"
+	"net/http"
 	"strings"
 
 	"github.com/a-h/templ"
@@ -92,4 +93,8 @@ func (p *AppPath) Permissions() db.Permission {
 	}
 
 	return pathToPermsMap[*p]
+}
+
+func Redirect(w http.ResponseWriter, r *http.Request, url templ.SafeURL, code int) {
+	http.Redirect(w, r, string(url), code)
 }
