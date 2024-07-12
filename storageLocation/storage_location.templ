@@ -8,32 +8,27 @@ import "ddn/ddn/db"
 
 templ newTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout("Create storage location | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4"><a href={ appPaths.StorageLocationNew.WithParams(map[string]string{}) }>&#8592;</a> New Storage location</h1>
+		@components.TopBar(components.TopBarParams {BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
+			New Storage Location
+		}
 		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
 templ viewTemplate(s *db.Session, fsl db.FormStorageLocation, v db.StorageLocationValidation, colors []db.Color) {
 	@components.RootLayout(fmt.Sprintf("Storage Location: %s | DDN", fsl.Bin)) {
-		<div class="p-4 bg-blue-400"><a href={ appPaths.StorageLocationListing.WithParams(map[string]string{}) }>&#8592;</a> Editing storage location</div>
+		@components.TopBar(components.TopBarParams {BackUrl: appPaths.StorageLocationListing.WithNoParams()}) {
+			Editing Storage Location
+		}
 		@EditableStorageLocationComponent(s, fsl, v, colors)
 	}
 }
 
-func getStorageLocationUrl(p db.StorageLocation) templ.SafeURL {
-	return templ.URL("/storage-location/" + strconv.Itoa(p.Id))
-}
-
-func deleteStorageLocationUrl(p db.StorageLocation) templ.SafeURL {
-	return templ.URL("/storage-location/" + strconv.Itoa(p.Id) + "/delete")
-}
-
 templ indexTemplate(s *db.Session, storageLocations []db.StorageLocation) {
 	@components.RootLayout("Storage Locations | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">
-			<a href={ appPaths.Dashboard.WithParams(map[string]string{}) }>&#8592;</a>
-			Storage Locations
-		</h1>
+		@components.TopBar(components.TopBarParams {BackUrl: appPaths.Dashboard.WithNoParams()}) {
+			StorageLocations
+		}
 		<main class="p-4">
 			@components.Table() {
 				<thead>
@@ -78,7 +73,7 @@ templ indexTemplate(s *db.Session, storageLocations []db.StorageLocation) {
 									</form>
 									<a
 										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
-										href={ appPaths.StorageLocation.WithParams(map[string]string{"id": string(storageLocation.Id)}) }
+										href={ appPaths.StorageLocation.WithParams(map[string]string{"id": strconv.Itoa(storageLocation.Id)}) }
 										aria-label={ "View and edit storage location: " + storageLocation.Bin }
 									>
 										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>

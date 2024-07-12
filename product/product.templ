@@ -8,24 +8,27 @@ import "ddn/ddn/db"
 
 templ newTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors []db.Color) {
 	@components.RootLayout("Create product | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">New Product</h1>
+		@components.TopBar(components.TopBarParams { BackUrl: appPaths.ProductListing.WithNoParams() }) {
+			New Product
+		}
 		@EditableProductComponent(s, fp, v, colors)
 	}
 }
 
 templ viewTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors []db.Color) {
 	@components.RootLayout(fmt.Sprintf("%s | DDN", fp.Name)) {
-		<div class="p-4 bg-blue-400"><a href={ appPaths.ProductListing.WithParams(map[string]string{}) }>&#8592;</a> Editing product</div>
+		@components.TopBar(components.TopBarParams { BackUrl: appPaths.ProductListing.WithNoParams() }) {
+			Editing Product
+		}
 		@EditableProductComponent(s, fp, v, colors)
 	}
 }
 
 templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 	@components.RootLayout("Products | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">
-			<a href={ appPaths.Dashboard.WithParams(map[string]string{}) }>&#8592;</a>
+		@components.TopBar(components.TopBarParams { BackUrl: appPaths.Dashboard.WithNoParams() }) {
 			Products
-		</h1>
+		}
 		<main class="max-w-prose mx-auto">
 			for _, product := range products {
 				<article

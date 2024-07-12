@@ -7,10 +7,9 @@ import "fmt"
 
 templ indexTemplate(s *db.Session, users []db.User) {
 	@components.RootLayout("Users | DDN") {
-		<h1 class="p-4 bg-blue-400 mb-4">
-			<a href={ appPaths.Dashboard.WithNoParams() }>&#8592;</a>
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.Dashboard.WithNoParams()}) {
 			Users
-		</h1>
+		}
 		@components.Table() {
 			<thead>
 				@components.StickyTr() {
@@ -80,8 +79,13 @@ templ indexTemplate(s *db.Session, users []db.User) {
 
 templ editTemplate() {
 	@components.RootLayout("Users | DDN") {
-		// TODO: Implement this page
-		This page hasn't yet been implemented. Please check back later.
+		@components.TopBar(components.TopBarParams { BackUrl: appPaths.UserListing.WithNoParams() }) {
+			Editing User
+		}
+		<p class="p-4">
+			// TODO: Implement this page
+			This page hasn't yet been implemented. Please check back later.
+		</p>
 	}
 }
 
@@ -94,6 +98,9 @@ type NewTemplateDetails struct {
 
 templ newTemplate(s *db.Session, p NewTemplateDetails) {
 	@components.RootLayout("Login to DDN") {
+		@components.TopBar(components.TopBarParams { BackUrl: appPaths.UserListing.WithNoParams() }) {
+			Create User
+		}
 		<form method="POST" class="max-w-prose p-4 mx-auto shadow-md dark:shadow-slate-400 rounded-md mt-8 flex flex-col gap-4">
 			@components.CSRF(s.Csrf_Token)
 			<h1 class="text-2xl text-center">Create User</h1>
@@ -122,12 +129,13 @@ templ newTemplate(s *db.Session, p NewTemplateDetails) {
 				Value:     "",
 			})
 			@components.FuzzySelect(components.FuzzySelectProps{
+				Label:   "Role",
 				Name:    "role",
 				Value:   "",
 				Options: p.roles,
 			})
 			@components.Button("submit") {
-				Login
+				Create User
 			}
 		</form>
 	}
