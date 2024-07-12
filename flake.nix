@@ -2,7 +2,7 @@
   description = "The ddn app";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11"; # Adjust the channel as necessary
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05"; 
     flake-utils.url = "github:numtide/flake-utils";
     templ.url = "github:a-h/templ";
   };
@@ -25,6 +25,8 @@
             air
             tailwindcss-language-server
             nil
+            nodejs_22
+            nodePackages.pnpm
             # Add any other dependencies here
           ];
 
@@ -43,21 +45,36 @@
           buildInputs = with pkgs; [
             go
             (templ system)
+            git
+            nodejs_22
+            nodePackages.pnpm
           ];
 
+          configurePhase = ''
+            export NPM_CONFIG_CACHE=$(mktemp -d)
+	    # export NPM_CONFIG_LOGLEVEL=silent
+	    export NPM_CONFIG_PREFIX=$(mktemp -d)
+	    export NPM_CONFIG_TMP=$(mktemp -d)
+	    export NPM_CONFIG_USERCONFIG=$(mktemp -d)/npmrc
+	    export NPM_CONFIG_GLOBALCONFIG=$(mktemp -d)/npmrc 
+            npm config set registry https://registry.npmjs.org/
+            npm config set cafile /etc/ssl/certs/ca-certificates.crt
+          '';
+
           buildPhase = ''
+            export GOPROXY=https://proxy.golang.org,direct
             export GOPATH=$PWD/.gopath
             export PATH=$GOPATH/bin:$PATH
             export GOCACHE=$(mktemp -d)
             mkdir -p $out/bin
             templ generate
-            pwd
+            npm install
+            npm run build
             go build -o $out/bin/ddn-app .
           '';
 
           installPhase = ''
             mkdir -p $out/bin
-            cp -r ./static $out/static
           '';
         };
         apps.default = {

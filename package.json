@@ -16,12 +16,12 @@
     "@iconify-json/heroicons-outline": "^1.1.10",
     "@iconify/tailwind": "^1.0.1",
     "solid-js": "^1.8.17",
-    "tailwindcss": "^3.4.1"
-  },
-  "dependencies": {
+    "tailwindcss": "^3.4.1",
     "esbuild": "^0.20.2",
     "htmx": "^0.0.2",
     "htmx.org": "^1.9.12",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
   }
 }
