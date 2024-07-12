@@ -36,7 +36,7 @@ func getDb() *sql.DB {
 var db *sql.DB
 
 func getTable[T any](rows *sql.Rows) (out []T, err error) {
-	var table []T
+	var table []T = []T{}
 
 	for rows.Next() {
 		var data T
