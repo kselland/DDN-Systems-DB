@@ -40,6 +40,7 @@ type DisplayableProduct struct {
 	Height         int
 	Active         bool
 	Price_Cents    int
+	Color_Name     string
 	Color_Hex_Code string
 }
 
@@ -94,6 +95,7 @@ func GetDisplayableProducts() (*[]DisplayableProduct, error) {
 			p.height,
 			p.active,
 			p.price_cents,
+			p.color_name,
 			c.hex_code color_hex_code
 		FROM
 			products p

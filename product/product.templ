@@ -33,9 +33,8 @@ templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 				>
 					<h2 class="flex">
 						{ product.Name }
-						<span class="text-gray-600 ml-auto">{ string(product.Product_Type) }</span>
-						<!-- TODO: Background-color isn't correct -->
-						<span class="p-3 rounded-lg ml-4 border border-gray-200" { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
+						<span class="text-gray-600 dark:text-gray-400 ml-auto">{ string(product.Product_Type) }</span>
+						<span class="p-3 rounded-lg ml-4 border border-gray-200" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
 					</h2>
 					<p>{ strconv.Itoa(product.Length) }x{ strconv.Itoa(product.Width ) }x{ strconv.Itoa(product.Height) }</p>
 					<a

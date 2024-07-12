@@ -24,11 +24,6 @@ templ homePageTemplate(s *db.Session) {
 						{ s.User.Email } { string(s.User.Role) }
 					</div>
 				</li>
-				<li class="contents">
-					<div class="p-4">
-						{ s.User.Email } { string(s.User.Role) }
-					</div>
-				</li>
 			</ul>
 		</nav>
 	}
