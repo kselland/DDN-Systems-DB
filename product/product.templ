@@ -29,35 +29,81 @@ templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 		@components.TopBar(components.TopBarParams { BackUrl: appPaths.Dashboard.WithNoParams() }) {
 			Products
 		}
-		<main class="max-w-prose mx-auto">
-			for _, product := range products {
-				<article
-					class="block shadow-md pl-12 p-4 rounded-md mb-4 relative"
-				>
-					<h2 class="flex">
-						{ product.Name }
-						<span class="text-gray-600 dark:text-gray-400 ml-auto">{ string(product.Product_Type) }</span>
-						<span class="p-3 rounded-lg ml-4 border border-gray-200" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
-					</h2>
-					<p>{ strconv.Itoa(product.Length) }x{ strconv.Itoa(product.Width ) }x{ strconv.Itoa(product.Height) }</p>
-					<a
-						class="absolute top-0 left-0 w-full h-full"
-						href={ appPaths.Product.WithParams(map[string]string{"id": fmt.Sprint(product.Id)}) }
-						aria-label={ "View and edit " + product.Name }
-					></a>
-					<form action={ templ.URL("/app/product/" + strconv.Itoa(product.Id) + "/delete") } method="POST" class="absolute top-1/2 transform -translate-y-1/2 left-0">
-						@components.CSRF(s.Csrf_Token)
-						<button class="p-4">&#128465;</button>
-					</form>
-				</article>
-			}
-			<a href={ appPaths.ProductNew.WithParams(map[string]string{}) } class="fixed rounded-full shadow-lg ml-auto text-4xl w-16 h-16 flex items-center justify-center bottom-8 right-8 bg-blue-400">+</a>
-		</main>
+		@components.Table() {
+			<thead>
+				@components.Tr() {
+					@components.Th(true) {Name}
+					@components.Th(true) {Type}
+					@components.Th(true) {Color}
+					@components.Th(true) {Length}
+					@components.Th(true) {Width}
+					@components.Th(true) {Height}
+					@components.Th(false) {
+						<div class="flex w-full">
+							<a
+								class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3"
+								href={ appPaths.ProductNew.WithNoParams() }
+							>
+								<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
+							</a>
+						</div>
+					}
+				}
+			</thead>
+			<tbody>
+				for _, product := range products {
+					@components.Tr() {
+						@components.Td(true) {
+							{ product.Name }
+						}
+						@components.Td(true) {
+						    { string(product.Product_Type) }
+						}
+						@components.Td(true) {
+							<span class="p-2" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
+						}
+						@components.Td(true) {
+							{ strconv.Itoa(product.Length) }
+						}
+						@components.Td(true) {
+							{ strconv.Itoa(product.Width ) }
+						}
+						@components.Td(true) {
+							{ strconv.Itoa(product.Height) }
+						}
+						@components.Td(false) {
+							<div class="flex">
+								<form
+									class="ml-auto"
+									action={ appPaths.ProductDelete.WithParams(map[string]string{"id": fmt.Sprint(product.Id)}) }
+									method="POST"
+								>
+									@components.CSRF(s.Csrf_Token)
+									<button
+										class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+										aria-label={ "Delete product: " + product.Name }
+									>
+										<span class="w-4 h-4 icon-[heroicons-outline--trash]"></span>
+									</button>
+								</form>
+								<a
+									class="p-3 outline-none focus:bg-gray-200 dark:focus:bg-slate-600"
+									href={ appPaths.Product.WithParams(map[string]string{"id": fmt.Sprint(product.Id)}) }
+									aria-label={ "View and edit product: " + product.Name }
+								>
+									<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
+								</a>
+							</div>
+						}
+					}
+				}
+			</tbody>
+		}
 	}
 }
 
 templ EditableProductComponent(s *db.Session, fp db.FormProduct, v ProductValidation, colors []db.Color) {
-	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md" method="POST">
+	<form class="max-w-prose mx-auto mt-8 p-4 rounded-md shadow-md dark:shadow-slate-400" method="POST">
 		@components.CSRF(s.Csrf_Token)
 		if v.Root != "" {
 			<p class="p-2 mb-4 rounded-md bg-red-400">{ v.Root }</p>

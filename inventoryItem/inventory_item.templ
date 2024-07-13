@@ -8,9 +8,8 @@ import "ddn/ddn/db"
 
 templ newTemplate(s *db.Session, item db.FormInventoryItem, v db.InventoryItemValidation, productOptions []db.Option, storageLocationOptions []db.Option) {
 	@components.RootLayout("Add inventory | DDN") {
-		<h1 class="p-4 bg-blue-400 dark:bg-blue-800 mb-4"><a href={ appPaths.Inventory.WithParams(map[string]string{}) }>&#8592;</a> Add inventory</h1>
 		@components.TopBar(components.TopBarParams { BackUrl: appPaths.Inventory.WithNoParams() }) {
-			New Inventory Item
+			Add Inventory
 		}
 		@EditableInventoryItemComponent(s, item, v, productOptions, storageLocationOptions)
 	}
