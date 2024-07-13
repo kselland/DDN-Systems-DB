@@ -2,7 +2,7 @@ import htmx from "htmx.org"
 //@ts-ignore
 window.htmx = htmx;
 
-import { For, render } from 'solid-js/web';
+import { For, Show, render } from 'solid-js/web';
 import html from 'solid-js/html';
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
@@ -388,22 +388,24 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                     <//>
                 <//>
                 <div class="p-4 mt-auto">
-                    <form method="POST">
-                        <input
-                            type="hidden"
-                            name="csrf_token"
-                            value=${() => p.csrfToken}
-                        />
-                        <input
-                            type="hidden"
-                            name="json_deductions"
-                            value=${() => JSON.stringify(selectedInventoryItemIds())}
-                        />
-                        <button 
-                            type="submit"
-                            class="bg-blue-400 rounded-md p-2 px-4 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring duration-200 disabled:bg-slate-800 shadow-md"
-                        >
-                            Deduct
+                    <${Show} when=${() => selectedInventoryItemIds().length > 0}>
+                        <form method="POST">
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value=${() => p.csrfToken}
+                            />
+                            <input
+                                type="hidden"
+                                name="json_deductions"
+                                value=${() => JSON.stringify(selectedInventoryItemIds())}
+                            />
+                            <button 
+                                type="submit"
+                                class="bg-blue-400 rounded-md p-2 px-4 outline-none ring-slate-800 dark:ring-yellow-200 focus-visible:ring duration-200 disabled:bg-slate-800 shadow-md"
+                            >
+                                Deduct
+                            <//>
                         <//>
                     <//>
                 <//>
@@ -506,7 +508,7 @@ const InventorySelector = (p: {
             />
         <//>
 
-        <div class="flex-grow flex flex-wrap h-72 overflow-scroll shadow-inner shadow-white p-4 rounded-md gap-4 items-center">
+        <div class="flex-grow flex flex-wrap h-72 overflow-scroll shadow-inner shadow-white p-4 rounded-md gap-4 items-start">
             <${For} each=${() => filtered()}>
                 ${(item: InventoryItem & { Bin: string }) => {
                     const selected = createMemo(() => {
