@@ -145,6 +145,12 @@ templ indexTemplate(s *db.Session, props IndexTemplateProps) {
 								>
 									<span class="w-4 h-4 icon-[heroicons-outline--plus]"></span>
 								</a>
+								<a
+									class="rounded-t-md outline-none focus:bg-gray-200 dark:focus:bg-slate-600 ml-auto p-3"
+									href={ appPaths.InventoryDeduct.WithNoParams() }
+								>
+									<span class="w-4 h-4 icon-[heroicons-outline--minus]"></span>
+								</a>
 							</div>
 						}
 					}
@@ -189,6 +195,7 @@ templ indexTemplate(s *db.Session, props IndexTemplateProps) {
 									>
 										<span class="w-4 h-4 icon-[heroicons-outline--pencil]"></span>
 									</a>
+									<!-- TODO: Ad circle minus icon that points to inventory deduction prepopulated with this product  -->
 								</div>
 							}
 						</tr>
@@ -334,7 +341,7 @@ type DeductTemplateProps struct {
 templ deductTemplate(s *db.Session, p DeductTemplateProps) {
 	@components.RootLayout("Deduct Inventory | DDN") {
 		<div class="flex flex-col min-h-screen">
-			@components.TopBar(components.TopBarParams{BackUrl: appPaths.Dashboard.WithNoParams()}) {
+			@components.TopBar(components.TopBarParams{BackUrl: appPaths.Inventory.WithNoParams()}) {
 				Deduct Inventory
 			}
 			<div class="inventory-deduction-interface flex-grow flex flex-col">
