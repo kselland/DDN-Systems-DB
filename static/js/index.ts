@@ -284,6 +284,10 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
         setSelectedInventoryItemIds,
     ] = createSignal<{ id: number, quantity: number }[]>([]);
 
+    const selectedProductIds = createMemo(() => {
+        return [...new Set(selectedInventoryItemIds().map(i => p.inventoryItems.find(ii => ii.Id === i.id)!.Product_Id))];
+    })
+
     const productOptionsMap = createMemo(() => {
         const map: Map<number, Option> = new Map();
         for (const o of p.productOptions) {
@@ -302,8 +306,27 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
         return map;
     });
 
+    const inventoryItemsMap = createMemo(() => {
+        const map: Map<number, InventoryItem> = new Map();
+        for (const ii of p.inventoryItems) {
+            map.set(ii.Id, ii);
+        }
+        return map;
+    })
+
     const unusedInventoryItems = createMemo(() => {
-        return p.inventoryItems.filter(i => !selectedInventoryItemIds().find(si => si.id === i.Id))
+        return p.inventoryItems.flatMap(i => {
+            const found = selectedInventoryItemIds().find(si => si.id === i.Id);
+            if (!found) return [i];
+
+            if (i.Quantity > found.quantity) {
+                return [
+                    {...i, Quantity: i.Quantity - found.quantity}
+                ];
+            }
+
+            return [];
+        })
     });
 
     return html`
@@ -324,23 +347,45 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                         remaining -= item.Quantity;
                         if (remaining <= 0) break;
                     }
-                    setSelectedInventoryItemIds([...selectedInventoryItemIds(), ...newItems]);
-                    console.log(selectedInventoryItemIds())
+
+                    const uncollapsedItems = [...selectedInventoryItemIds(), ...newItems];
+                    const collapsedItems: typeof uncollapsedItems = [];
+
+                    for (const item of uncollapsedItems) {
+                        const dupeIndex = collapsedItems.findIndex(ci => ci.id === item.id);
+                        if (dupeIndex !== -1) {
+                            const dupe = collapsedItems[dupeIndex];
+                            collapsedItems[dupeIndex] = {id: dupe.id, quantity: dupe.quantity + item.quantity}
+                        } else {
+                            collapsedItems.push(item);
+                        }
+                    }
+
+                    setSelectedInventoryItemIds(collapsedItems);
         }}
             />
             <div class="flex flex-col border-l border-white flex-1">
-                <table class="w-full">
-                    <tbody>
-                        <${For} each=${selectedInventoryItemIds}>
-                            ${(item: {id: number, quantity: number}) => html`
-                                <tr>
-                                    <td class="p-2">${p.storageLocationOptions.find(s => +s.value === p.inventoryItems.find(i => i.Id === item.id)!.Storage_Location_Id)!.text}</td>
-                                    <td class="p-2">${p.productOptions.find(product => +product.value === p.inventoryItems.find(s => s.Id == item.id)!.Product_Id)!.text}</td>
-                                    <td class="p-2">${item.quantity} of ${p.inventoryItems.find(s => s.Id == item.id)!.Quantity}</td>
-                                </tr>
-                            `}
-                        <//>
-                    </tbody>
+                <ul class="w-full">
+                    <${For} each=${selectedProductIds}>
+                        ${(productId: number) => {
+                            const items = createMemo(() => selectedInventoryItemIds().filter(item => inventoryItemsMap().get(item.id)!.Product_Id === productId));
+                            return html`
+                                <li class="p-4">
+                                    ${productOptionsMap().get(productId)!.text}
+                                    <ul>
+                                        <${For} each=${items}>
+                                            ${(item: {id: number, quantity: number}) => html`
+                                                <li class="flex">
+                                                    <p class="p-2">${storageLocationOptionsMap().get(inventoryItemsMap().get(item.id)!.Storage_Location_Id)!.text}</p>
+                                                    <p class="p-2">${item.quantity} of ${p.inventoryItems.find(s => s.Id == item.id)!.Quantity}</p>
+                                                </li>
+                                            `}
+                                        <//>
+                                    </ul>
+                                <//>
+                            `
+                        }}
+                    <//>
                 <//>
                 <div class="p-4 mt-auto">
                     <form method="POST">
@@ -390,7 +435,6 @@ const InventorySelector = (p: {
     }
 
     const together = createMemo(() => {
-        console.log(p)
         return p.inventoryItems.map(i => ({
             ...i,
             Bin: p.storageLocationOptions.find(s => +s.value === i.Storage_Location_Id)!.text
@@ -418,7 +462,6 @@ const InventorySelector = (p: {
             remaining -= filteredItem.Quantity;
             if (remaining <= 0) break;
         }
-        console.log(items);
         setSelectedInventoryItems(items);
     }
 
