@@ -52,6 +52,9 @@ templ indexTemplate(s *db.Session, storageLocations []db.StorageLocation) {
 					}
 				</thead>
 				<tbody>
+					if len(storageLocations) == 0 {
+						<tr><td colspan="3" class="p-4">No storage locations</td></tr>
+					}
 					for _, storageLocation := range storageLocations {
 						@components.Tr() {
 							@components.Td(true) {
