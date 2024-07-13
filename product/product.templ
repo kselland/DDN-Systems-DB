@@ -60,7 +60,7 @@ templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 						    { string(product.Product_Type) }
 						}
 						@components.Td(true) {
-							<span class="p-2" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
+							<span class="block p-2 w-full rounded-md" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
 						}
 						@components.Td(true) {
 							{ strconv.Itoa(product.Length) }
