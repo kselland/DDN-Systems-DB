@@ -28,8 +28,8 @@ const (
 	Inventory           AppPath = "/app/inventory"
 	InventoryItemNew    AppPath = "/app/inventory/new"
 	InventoryDeduct     AppPath = "/app/inventory/deduct"
-	InventoryItem       AppPath = "/app/inventory-items/{id}"
-	InventoryItemDelete AppPath = "/app/inventory-items/{id}/delete"
+	InventoryItem       AppPath = "/app/inventory-item/{id}"
+	InventoryItemDelete AppPath = "/app/inventory-item/{id}/delete"
 
 	UserListing AppPath = "/app/users"
 	UserNew     AppPath = "/app/users/new"
