@@ -123,12 +123,15 @@ templ EditableProductComponent(s *db.Session, fp db.FormProduct, v ProductValida
 					Required:    true,
 					Placeholder: "Ex. VSB42SET",
 				})
-				<div class="flex">
-					@components.SizeField("width", fp.Width, "W", "number")
-					<span class="font-mono italic text-gray-600 p-1">&times;</span>
-					@components.SizeField("length", fp.Length, "L", "number")
-					<span class="font-mono italic text-gray-600 p-1">&times;</span>
-					@components.SizeField("height", fp.Height, "H", "number")
+				<div class="flex flex-col gap-2">
+					<p class="font-bold">Size (in)</p>
+					<div class="flex">
+						@components.SizeField("width", fp.Width, "W", "number")
+						<span class="font-mono italic text-gray-600 p-1">&times;</span>
+						@components.SizeField("height", fp.Height, "H", "number")
+						<span class="font-mono italic text-gray-600 p-1">&times;</span>
+						@components.SizeField("length", fp.Length, "D", "number")
+					</div>
 				</div>
 				@components.TextInput(components.TextInputProps{
 					Name:      "price",

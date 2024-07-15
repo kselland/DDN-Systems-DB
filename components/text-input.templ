@@ -12,7 +12,7 @@ type TextInputProps struct {
 
 templ TextInput(p TextInputProps) {
 	<label class="flex flex-col gap-2">
-		{ p.Label }
+		<span class="font-bold">{ p.Label }</span>
 		<input
 			value={ p.Value }
 			name={ p.Name }
