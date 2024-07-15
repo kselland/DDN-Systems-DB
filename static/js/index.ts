@@ -4,7 +4,7 @@ window.htmx = htmx;
 
 import { For, Show, render } from 'solid-js/web';
 import html from 'solid-js/html';
-import { createEffect, createMemo, createSignal } from 'solid-js';
+import { Accessor, Setter, createEffect, createMemo, createSignal } from 'solid-js';
 
 const dbg = <T>(v: T): T => {
     console.log(v);
@@ -165,9 +165,9 @@ const FuzzySelect = (props: {
                     selectedId=${() => props.selectedId}
                     focusedOption=${focusedOption}
                     onSelect=${(newSelectedId: string) => {
-            handleSelect(newSelectedId)
-            setMouseDownOnItem(true)
-        }}
+                        handleSelect(newSelectedId)
+                        setMouseDownOnItem(true)
+                    }}
                 />
             <//>
             <button
@@ -280,12 +280,12 @@ type Data = {
 
 const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocationOptions: Option[], inventoryItems: InventoryItem[], csrfToken: string }) => {
     const [
-        selectedInventoryItemIds,
-        setSelectedInventoryItemIds,
+        inventoryToBeDeducted,
+        setInventoryToBeDeducted,
     ] = createSignal<{ id: number, quantity: number }[]>([]);
 
     const selectedProductIds = createMemo(() => {
-        return [...new Set(selectedInventoryItemIds().map(i => p.inventoryItems.find(ii => ii.Id === i.id)!.Product_Id))];
+        return [...new Set(inventoryToBeDeducted().map(i => p.inventoryItems.find(ii => ii.Id === i.id)!.Product_Id))];
     })
 
     const productOptionsMap = createMemo(() => {
@@ -316,7 +316,7 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
 
     const unusedInventoryItems = createMemo(() => {
         return p.inventoryItems.flatMap(i => {
-            const found = selectedInventoryItemIds().find(si => si.id === i.Id);
+            const found = inventoryToBeDeducted().find(si => si.id === i.Id);
             if (!found) return [i];
 
             if (i.Quantity > found.quantity) {
@@ -329,9 +329,18 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
         })
     });
 
+
+    const [selectorData, setSelectorData] = createSignal<RawSelectorData>({
+        productId: "",
+        quantityStr: "",
+        inventoryItems: [],
+    });
+
     return html`
 		<div class="flex flex-grow">
             <${InventorySelector}
+                data=${selectorData}
+                setData=${setSelectorData}
                 storageLocationOptionsMap=${storageLocationOptionsMap}
                 productOptionsMap=${productOptionsMap}
                 productOptions=${() => p.productOptions}
@@ -348,27 +357,27 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                         if (remaining <= 0) break;
                     }
 
-                    const uncollapsedItems = [...selectedInventoryItemIds(), ...newItems];
+                    const uncollapsedItems = [...inventoryToBeDeducted(), ...newItems];
                     const collapsedItems: typeof uncollapsedItems = [];
 
                     for (const item of uncollapsedItems) {
                         const dupeIndex = collapsedItems.findIndex(ci => ci.id === item.id);
                         if (dupeIndex !== -1) {
                             const dupe = collapsedItems[dupeIndex];
-                            collapsedItems[dupeIndex] = {id: dupe.id, quantity: dupe.quantity + item.quantity}
+                            collapsedItems[dupeIndex] = {id: dupe.id, quantity: dupe.quantity + item.quantity};
                         } else {
                             collapsedItems.push(item);
                         }
                     }
 
-                    setSelectedInventoryItemIds(collapsedItems);
-        }}
+                    setInventoryToBeDeducted(collapsedItems);
+                }}
             />
             <div class="flex flex-col border-l border-white flex-1">
                 <ul class="w-full">
                     <${For} each=${selectedProductIds}>
                         ${(productId: number) => {
-                            const items = createMemo(() => selectedInventoryItemIds().filter(item => inventoryItemsMap().get(item.id)!.Product_Id === productId));
+                            const items = createMemo(() => inventoryToBeDeducted().filter(item => inventoryItemsMap().get(item.id)!.Product_Id === productId));
                             return html`
                                 <li class="p-4">
                                     ${productOptionsMap().get(productId)!.text}
@@ -376,6 +385,28 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                                         <${For} each=${items}>
                                             ${(item: {id: number, quantity: number}) => html`
                                                 <li class="flex">
+                                                    <button
+                                                        class="p-2 flex items-center"
+                                                        onClick=${(e) => {
+                                                            setInventoryToBeDeducted(inventoryToBeDeducted().filter(i => i !== item));
+
+                                                            setSelectorData({
+                                                                quantityStr: item.quantity.toString(),
+                                                                productId: inventoryItemsMap().get(item.id)!.Product_Id.toString(),
+                                                                inventoryItems: [item.id],
+                                                            })
+                                                        }}
+                                                    >
+                                                        <div class="icon-[heroicons-outline--arrow-left]">-</div>
+                                                    </button>
+                                                    <button
+                                                        class="p-2 flex items-center"
+                                                        onClick=${(e) => {
+                                                            setInventoryToBeDeducted(inventoryToBeDeducted().filter(i => i !== item));
+                                                        }}
+                                                    >
+                                                        <div class="icon-[heroicons-outline--trash]"></div>
+                                                    </button>
                                                     <p class="p-2">${storageLocationOptionsMap().get(inventoryItemsMap().get(item.id)!.Storage_Location_Id)!.text}</p>
                                                     <p class="p-2">${item.quantity} of ${p.inventoryItems.find(s => s.Id == item.id)!.Quantity}</p>
                                                 </li>
@@ -388,7 +419,7 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                     <//>
                 <//>
                 <div class="p-4 mt-auto">
-                    <${Show} when=${() => selectedInventoryItemIds().length > 0}>
+                    <${Show} when=${() => inventoryToBeDeducted().length > 0}>
                         <form method="POST">
                             <input
                                 type="hidden"
@@ -398,7 +429,7 @@ const InventoryDeductionInterface = (p: { productOptions: Option[], storageLocat
                             <input
                                 type="hidden"
                                 name="json_deductions"
-                                value=${() => JSON.stringify(selectedInventoryItemIds())}
+                                value=${() => JSON.stringify(inventoryToBeDeducted())}
                             />
                             <button 
                                 type="submit"
@@ -419,17 +450,21 @@ type SelectorData = {
     inventoryItems: number[],
     quantity: number,
 }
+type RawSelectorData = {
+    productId: string,
+    inventoryItems: number[],
+    quantityStr: string,
+}
 const InventorySelector = (p: {
     productOptions: Option[],
     storageLocationOptions: Option[],
     inventoryItems: InventoryItem[],
+    data: RawSelectorData,
+    setData: Setter<RawSelectorData>,
     onSelect: (s: SelectorData) => void,
 }) => {
-    const [selectedId, setSelectedId] = createSignal<string>("");
-    const [selectedInventoryItems, setSelectedInventoryItems] = createSignal<number[]>([]);
-    const [quantityStr, setQuantityStr] = createSignal<string>("");
     const quantity = () => {
-        const v = parseInt(quantityStr());
+        const v = parseInt(p.data.quantityStr);
         if (isNaN(v)) {
             return undefined
         }
@@ -444,16 +479,16 @@ const InventorySelector = (p: {
     });
 
     const filtered = createMemo(() => {
-        return together().filter(i => i.Product_Id === +selectedId())
+        return together().filter(i => i.Product_Id === +p.data.productId)
     })
 
-    const sum = () => selectedInventoryItems().reduce((acc, curr) => p.inventoryItems.find(i => i.Id === curr)!.Quantity + acc, 0);
-    const disabled = () => quantity() === undefined || !selectedId() || sum() < quantity()!
+    const sum = () => p.data.inventoryItems.reduce((acc, curr) => p.inventoryItems.find(i => i.Id === curr)!.Quantity + acc, 0);
+    const disabled = () => quantity() === undefined || !p.data.productId || sum() < quantity()!
 
     const updateToAppropriateInventoryItemSelection = () => {
         let remaining = quantity();
         if (remaining === undefined) {
-            setSelectedInventoryItems([]);
+            p.setData({...p.data, inventoryItems: []});
             return
         }
         const items: number[] = [];
@@ -464,32 +499,38 @@ const InventorySelector = (p: {
             remaining -= filteredItem.Quantity;
             if (remaining <= 0) break;
         }
-        setSelectedInventoryItems(items);
+        p.setData({...p.data, inventoryItems: items});
     }
+
+    createEffect(() => {
+        console.log(p.data)
+    })
 
     return html`
         <form
             class="flex flex-col gap-4 p-4 flex-1"
             on:submit=${(e) => {
-            e.preventDefault();
-            if (disabled()) return;
+                e.preventDefault();
+                if (disabled()) return;
 
-            const prevData = {
-                productId: +selectedId(),
-                inventoryItems: selectedInventoryItems(),
-                quantity: quantity()!,
-            }
-            setSelectedId("");
-            setSelectedInventoryItems([]);
-            setQuantityStr("");
-            p.onSelect(prevData);
-        }}
+                const prevData = {
+                    productId: +p.data.productId,
+                    inventoryItems: p.data.inventoryItems,
+                    quantity: quantity()!,
+                }
+                p.setData({
+                    productId: "",
+                    quantityStr: "",
+                    inventoryItems: [],
+                })
+                p.onSelect(prevData);
+            }}
         >
         <${TextInputControl}
             label="Quantity"
-            value=${quantityStr}
+            value=${() => p.data.quantityStr}
             onInput=${(e) => {
-                setQuantityStr(e.currentTarget.value);
+                p.setData({...p.data, quantityStr: e.currentTarget.value});
                 updateToAppropriateInventoryItemSelection();
             }}
             type="number"
@@ -497,9 +538,9 @@ const InventorySelector = (p: {
         <label class="flex flex-col gap-2">
             <p>Product</p>
             <${FuzzySelect}
-                selectedId=${selectedId}
+                selectedId=${() => p.data.productId}
                 setSelectedId=${(id) => {
-                    setSelectedId(id);
+                    p.setData({...p.data, productId: id});
                     updateToAppropriateInventoryItemSelection();
                 }}
                 options=${() => p.productOptions}
@@ -512,7 +553,7 @@ const InventorySelector = (p: {
             <${For} each=${() => filtered()}>
                 ${(item: InventoryItem & { Bin: string }) => {
                     const selected = createMemo(() => {
-                        return selectedInventoryItems().includes(item.Id);
+                        return p.data.inventoryItems.includes(item.Id);
                     })
 
                     const className = () => 
@@ -525,12 +566,12 @@ const InventorySelector = (p: {
                                 class="absolute top-0 left-0 right-0 bottom-0 opacity-0"
                                 type="checkbox"
                                 name="storageLocations"
-                                checked=${() => dbg(selectedInventoryItems().includes(item.Id))}
+                                checked=${() => dbg(p.data.inventoryItems.includes(item.Id))}
                                 value=${() => item.Id}
                                 onInput=${(e) => {
                                     const newSelected = !selected();
-                                    const base = selectedInventoryItems().filter(i => i != item.Id)
-                                    setSelectedInventoryItems(newSelected ? base.concat(item.Id) : base);
+                                    const base = p.data.inventoryItems.filter(i => i != item.Id)
+                                    p.setData({...p.data, inventoryItems: newSelected ? base.concat(item.Id) : base })
                                 }}
                             />
                         <//>
