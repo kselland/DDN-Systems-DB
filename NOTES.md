@@ -32,3 +32,7 @@ These are notes on the DDN project
     - [ ] Implement multi colored buttons and make the different buttons different colors
     - [ ] Disable or hide the buttons that don't make sense based on what the state is
 
+
+## Kevin Requests
+- [ ] Must be able to store fractional cabinet sizes
+

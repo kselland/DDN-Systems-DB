@@ -508,7 +508,7 @@ const InventorySelector = (p: {
 
     return html`
         <form
-            class="flex flex-col gap-4 p-4 flex-1"
+            class="flex flex-col gap-4 p-4 w-72"
             on:submit=${(e) => {
                 e.preventDefault();
                 if (disabled()) return;
@@ -549,34 +549,35 @@ const InventorySelector = (p: {
             />
         <//>
 
-        <div class="flex-grow flex flex-wrap h-72 overflow-scroll shadow-inner shadow-white p-4 rounded-md gap-4 items-start">
-            <${For} each=${() => filtered()}>
-                ${(item: InventoryItem & { Bin: string }) => {
-                    const selected = createMemo(() => {
-                        return p.data.inventoryItems.includes(item.Id);
-                    })
+        <div class="flex-grow flex flex-wrap overflow-scroll p-4 rounded-md gap-4 items-start">
+            <ul class="list-disc">
+                <${For} each=${() => filtered()}>
+                    ${(item: InventoryItem & { Bin: string }) => {
+                        const selected = createMemo(() => {
+                            return p.data.inventoryItems.includes(item.Id);
+                        })
 
-                    const className = () => 
-                        `focus-within:outline-gray-400 outline outline-transparent relative p-4 rounded-md border border-gray-600 duration-200 ${selected() ? 'bg-gray-400' : ''}`
-
-                    return html`
-                        <label class=${className}>
-                            ${item.Bin} - ${item.Quantity}
-                            <input
-                                class="absolute top-0 left-0 right-0 bottom-0 opacity-0"
-                                type="checkbox"
-                                name="storageLocations"
-                                checked=${() => dbg(p.data.inventoryItems.includes(item.Id))}
-                                value=${() => item.Id}
-                                onInput=${(e) => {
-                                    const newSelected = !selected();
-                                    const base = p.data.inventoryItems.filter(i => i != item.Id)
-                                    p.setData({...p.data, inventoryItems: newSelected ? base.concat(item.Id) : base })
-                                }}
-                            />
-                        <//>
-                    `;
-        }}
+                        return html`
+                            <li>
+                                <label>
+                                    <input
+                                        class="mr-2"
+                                        type="checkbox"
+                                        name="storageLocations"
+                                        checked=${() => dbg(p.data.inventoryItems.includes(item.Id))}
+                                        value=${() => item.Id}
+                                        onInput=${(e) => {
+                                            const newSelected = !selected();
+                                            const base = p.data.inventoryItems.filter(i => i != item.Id)
+                                            p.setData({...p.data, inventoryItems: newSelected ? base.concat(item.Id) : base })
+                                        }}
+                                    />
+                                    ${item.Bin} - ${item.Quantity}
+                                <//>
+                            <//>
+                        `;
+            }}
+                <//>
             <//>
         <//>
 
