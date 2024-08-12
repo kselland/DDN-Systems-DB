@@ -2,28 +2,36 @@ package db
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 )
 
 type Product struct {
 	Id           int
 	Name         string
 	Product_Type ProductType
-	Length       int
-	Width        int
-	Height       int
+	Length_Thou  int
+	Width_Thou   int
+	Height_Thou  int
 	Active       bool
 	Price_Cents  int
 	Color_Name   string
+}
+
+func FormatDecimalAsSize(value float64) string {
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.3f", value), "0"), ".")
+}
+
+func thouToDecimalString(thou int) string {
+	return FormatDecimalAsSize(float64(thou) / 1000.0)
 }
 
 func (p *Product) ToFormProduct() FormProduct {
 	return FormProduct{
 		Name:         p.Name,
 		Product_Type: string(p.Product_Type),
-		Length:       strconv.Itoa(p.Length),
-		Width:        strconv.Itoa(p.Width),
-		Height:       strconv.Itoa(p.Height),
+		Length:       thouToDecimalString(p.Length_Thou),
+		Width:        thouToDecimalString(p.Width_Thou),
+		Height:       thouToDecimalString(p.Height_Thou),
 		Active:       p.Active,
 		Price:        fmt.Sprintf("%d.%02d", p.Price_Cents/100, p.Price_Cents%100),
 		Color_Name:   p.Color_Name,
@@ -35,9 +43,9 @@ type DisplayableProduct struct {
 	Id             int
 	Name           string
 	Product_Type   ProductType
-	Length         int
-	Width          int
-	Height         int
+	Length         float64
+	Width          float64
+	Height         float64
 	Active         bool
 	Price_Cents    int
 	Color_Name     string
@@ -90,9 +98,9 @@ func GetDisplayableProducts() (*[]DisplayableProduct, error) {
 			p.id,
 			p.name,
 			p.product_type,
-			p.length,
-			p.width,
-			p.height,
+			p.length_thou::decimal / 1000 as length,
+			p.width_thou::decimal / 1000 as width,
+			p.height_thou::decimal / 1000 as height,
 			p.active,
 			p.price_cents,
 			p.color_name,
@@ -125,9 +133,9 @@ func UpdateProduct(id int, p *Product) error {
 					products
 				SET 
 					name           = $1,
-					width          = $2, 
-					length         = $3,
-					height         = $4,
+					width_thou     = $2, 
+					length_thou    = $3,
+					height_thou    = $4,
 					active         = $5,
 					product_type   = $6,
 					color_name     = $7,
@@ -136,9 +144,9 @@ func UpdateProduct(id int, p *Product) error {
 					id = $9
 			`,
 		p.Name,
-		p.Width,
-		p.Length,
-		p.Height,
+		p.Width_Thou,
+		p.Length_Thou,
+		p.Height_Thou,
 		p.Active,
 		p.Product_Type,
 		p.Color_Name,
@@ -159,9 +167,9 @@ func InsertProduct(p *Product) error {
 		`
 			INSERT INTO products (
 				name,
-				width, 
-				length,
-				height,
+				width_thou, 
+				length_thou,
+				height_thou,
 				product_type,
 				active,
 				price_cents,
@@ -169,9 +177,9 @@ func InsertProduct(p *Product) error {
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`,
 		p.Name,
-		p.Width,
-		p.Length,
-		p.Height,
+		p.Width_Thou,
+		p.Length_Thou,
+		p.Height_Thou,
 		p.Product_Type,
 		p.Active,
 		p.Price_Cents,

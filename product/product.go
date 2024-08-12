@@ -73,19 +73,19 @@ func validateFormProduct(p db.FormProduct, colorProductTypes []db.ColorProductTy
 		valid = false
 	}
 
-	width, widthErr := strconv.Atoi(p.Width)
+	width, widthErr := strconv.ParseFloat(p.Width, 64)
 	if widthErr != nil {
 		validation.Width = "Width must be an integer"
 		valid = false
 	}
 
-	length, lengthErr := strconv.Atoi(p.Length)
+	length, lengthErr := strconv.ParseFloat(p.Length, 64)
 	if lengthErr != nil {
 		validation.Length = "Length must be an integer"
 		valid = false
 	}
 
-	height, heightErr := strconv.Atoi(p.Height)
+	height, heightErr := strconv.ParseFloat(p.Height, 64)
 	if heightErr != nil {
 		validation.Height = "Height must be an integer"
 		valid = false
@@ -141,9 +141,9 @@ func validateFormProduct(p db.FormProduct, colorProductTypes []db.ColorProductTy
 	return validation, &db.Product{
 		Name:         p.Name,
 		Product_Type: db.ProductType(p.Product_Type),
-		Length:       length,
-		Width:        width,
-		Height:       height,
+		Length_Thou:  int(length * 1000),
+		Width_Thou:   int(width * 1000),
+		Height_Thou:  int(height * 1000),
 		Price_Cents:  price,
 		Color_Name:   p.Color_Name,
 	}

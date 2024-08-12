@@ -19,20 +19,20 @@ INSERT INTO color_product_types (
 
 INSERT INTO products (
     name,
-    width, 
-    length,
-    height,
+    width_thou, 
+    length_thou,
+    height_thou,
     product_type,
     active,
     price_cents,
     color_name
 ) VALUES 
-    ('Product 1', 20, 20, 20, 'cabinet', true, 20000, 'white'),
-    ('Product 2', 21, 22, 23, 'cabinet', true, 12000, 'n2'),
-    ('Product 3', 22, 23, 24, 'cabinet', true, 8000,  'white'),
-    ('Product 4', 23, 24, 25, 'cabinet', true, 4000,  'n2'),
+    ('Product 1', 20000, 20000, 20000, 'cabinet', true, 20000, 'white'),
+    ('Product 2', 21000, 22000, 23000, 'cabinet', true, 12000, 'n2'),
+    ('Product 3', 22, 23, 24000, 'cabinet', true, 8000,  'white'),
+    ('Product 4', 23, 24000, 25, 'cabinet', true, 4000,  'n2'),
     ('Accessory 1', 20, 20, 20, 'accessory', true, 20000, 'white'),
-    ('Accessory 2', 21, 22, 23, 'accessory', true, 12000, 'n2'),
+    ('Accessory 2', 21, 22, 23000, 'accessory', true, 12000, 'n2'),
     ('Accessory 3', 22, 23, 24, 'accessory', true, 8000,  'satin-nickel'),
     ('Accessory 4', 23, 24, 25, 'accessory', true, 4000,  'black');
 

@@ -2,13 +2,12 @@ package product
 
 import "ddn/ddn/components"
 import "fmt"
-import "strconv"
 import "ddn/ddn/appPaths"
 import "ddn/ddn/db"
 
 templ newTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors []db.Color) {
 	@components.RootLayout("Create product | DDN") {
-		@components.TopBar(components.TopBarParams { BackUrl: appPaths.ProductListing.WithNoParams() }) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.ProductListing.WithNoParams()}) {
 			New Product
 		}
 		@EditableProductComponent(s, fp, v, colors)
@@ -17,7 +16,7 @@ templ newTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors 
 
 templ viewTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors []db.Color) {
 	@components.RootLayout(fmt.Sprintf("%s | DDN", fp.Name)) {
-		@components.TopBar(components.TopBarParams { BackUrl: appPaths.ProductListing.WithNoParams() }) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.ProductListing.WithNoParams()}) {
 			Editing Product
 		}
 		@EditableProductComponent(s, fp, v, colors)
@@ -26,18 +25,30 @@ templ viewTemplate(s *db.Session, fp db.FormProduct, v ProductValidation, colors
 
 templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 	@components.RootLayout("Products | DDN") {
-		@components.TopBar(components.TopBarParams { BackUrl: appPaths.Dashboard.WithNoParams() }) {
+		@components.TopBar(components.TopBarParams{BackUrl: appPaths.Dashboard.WithNoParams()}) {
 			Products
 		}
 		@components.Table() {
 			<thead>
 				@components.Tr() {
-					@components.Th(true) {Name}
-					@components.Th(true) {Type}
-					@components.Th(true) {Color}
-					@components.Th(true) {Length}
-					@components.Th(true) {Width}
-					@components.Th(true) {Height}
+					@components.Th(true) {
+						Name
+					}
+					@components.Th(true) {
+						Type
+					}
+					@components.Th(true) {
+						Color
+					}
+					@components.Th(true) {
+						Length
+					}
+					@components.Th(true) {
+						Width
+					}
+					@components.Th(true) {
+						Height
+					}
 					@components.Th(false) {
 						<div class="flex w-full">
 							<a
@@ -60,7 +71,7 @@ templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 							{ product.Name }
 						}
 						@components.Td(true) {
-						    <span class="text-gray-600 dark:text-gray-400">
+							<span class="text-gray-600 dark:text-gray-400">
 								{ string(product.Product_Type) }
 							</span>
 						}
@@ -68,13 +79,13 @@ templ indexTemplate(s *db.Session, products []db.DisplayableProduct) {
 							<span class="block p-2 w-full rounded-md" title={ product.Color_Name } { templ.Attributes{"style": "background-color: " + product.Color_Hex_Code }... }></span>
 						}
 						@components.Td(true) {
-							{ strconv.Itoa(product.Length) }"
+							{ db.FormatDecimalAsSize(product.Length) }"
 						}
 						@components.Td(true) {
-							{ strconv.Itoa(product.Width ) }"
+							{ db.FormatDecimalAsSize(product.Width) }"
 						}
 						@components.Td(true) {
-							{ strconv.Itoa(product.Height) }"
+							{ db.FormatDecimalAsSize(product.Height) }"
 						}
 						@components.Td(false) {
 							<div class="flex">
@@ -126,11 +137,11 @@ templ EditableProductComponent(s *db.Session, fp db.FormProduct, v ProductValida
 				<div class="flex flex-col gap-2">
 					<p class="font-bold">Size (in)</p>
 					<div class="flex">
-						@components.SizeField("width", fp.Width, "W", "number")
+						@components.SizeField("width", fp.Width, "W", "number", "0.001")
 						<span class="font-mono italic text-gray-600 p-1">&times;</span>
-						@components.SizeField("height", fp.Height, "H", "number")
+						@components.SizeField("height", fp.Height, "H", "number", "0.001")
 						<span class="font-mono italic text-gray-600 p-1">&times;</span>
-						@components.SizeField("length", fp.Length, "D", "number")
+						@components.SizeField("length", fp.Length, "D", "number", "0.001")
 					</div>
 				</div>
 				@components.TextInput(components.TextInputProps{

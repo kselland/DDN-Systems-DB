@@ -1,6 +1,6 @@
 package components
 
-templ SizeField(name string, value string, placeholder string, inputType string) {
+templ SizeField(name string, value string, placeholder string, inputType string, step string) {
 	<div class="size-field p-1">
 		<div class="relative group">
 			<div class="shadow-text font-mono invisible group-focus-within:px-2 duration-200 whitespace-pre">
@@ -17,6 +17,7 @@ templ SizeField(name string, value string, placeholder string, inputType string)
 				name={ name }
 				placeholder={ placeholder }
 				class="bg-transparent font-mono absolute top-0 left-0 w-full h-full focus:px-2 duration-200"
+				step={ step }
 			/>
 		</div>
 	</div>

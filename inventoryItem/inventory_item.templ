@@ -283,11 +283,11 @@ templ EditableInventoryItemComponent(
 			<div class="flex flex-col">
 				<label class="flex gap-2">
 					<p class="py-1">In stock:</p>
-					@components.SizeField("quantity", item.Quantity, "Qty", "number")
+					@components.SizeField("quantity", item.Quantity, "Qty", "number", "1")
 				</label>
 				<label class="flex gap-2">
 					<p class="py-1">Batch Number:</p>
-					@components.SizeField("batch_number", item.Batch_Number, "___", "number")
+					@components.SizeField("batch_number", item.Batch_Number, "___", "number", "1")
 				</label>
 				@components.FuzzySelect(components.FuzzySelectProps{Name: "product_id", Value: item.Product_Id, Options: productOptions})
 				@components.FuzzySelect(components.FuzzySelectProps{Name: "storage_location_id", Value: item.Storage_Location_Id, Options: storageLocationOptions})
